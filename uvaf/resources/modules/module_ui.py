@@ -12,12 +12,12 @@ from PySide6.QtCore import (
     QEvent, QObject, QPoint, QRect, QRegularExpression, Qt, QTimer,
 )
 from PySide6.QtGui import (
-    QColor, QCursor, QDoubleValidator, QGuiApplication, QImage, QKeyEvent,
-    QKeySequence, QMouseEvent, QPainter, QRegularExpressionValidator,
+    QColor, QCursor, QDoubleValidator, QGuiApplication, QImage, QIntValidator,
+    QKeyEvent, QKeySequence, QMouseEvent, QPainter, QRegularExpressionValidator,
 )
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QFileDialog, QGroupBox,
-    QHBoxLayout, QInputDialog, QIntValidator, QLabel, QLineEdit, QListWidget, QListWidgetItem,
+    QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget, QListWidgetItem,
     QMessageBox, QPlainTextEdit, QPushButton, QRubberBand, QSpinBox, QToolTip,
     QVBoxLayout, QWidget,
 )

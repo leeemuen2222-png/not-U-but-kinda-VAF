@@ -126,6 +126,9 @@ from ...resources.modules.runtime import (
     WorkspaceRuntimeSignals,
     intersect_roi,
 )
+from ...resources.modules.runtime_guard import (
+    validate_workspace_runtime_contract,
+)
 
 
 MIME_BLOCK = "application/x-uvaf-block"
@@ -6626,6 +6629,13 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
         self._global_runtime_active = False
         self._runtime_lock = threading.RLock()
 
+        # Refactor safety: detect broken method extraction/binding before the
+        # Run button is connected. This specifically prevents silent failures
+        # such as an accidentally orphaned @staticmethod decorator.
+        validate_workspace_runtime_contract(
+            self
+        )
+
         # Recognition viewport debug state. All coordinates are absolute
         # global/physical desktop pixels.
         self._vision_debug_lock = threading.RLock()
@@ -7010,7 +7020,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
             objectName="primaryButton",
         )
         self.run_button.clicked.connect(
-            self.run_workflows
+            self._on_run_button_clicked
         )
         toolbar_layout.addWidget(
             self.run_button
@@ -11459,12 +11469,34 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
         )
 
 
+    def _on_run_button_clicked(
+        self,
+        _checked: bool = False,
+    ) -> None:
+        """Qt-safe entry point for the Run button.
 
-    @staticmethod
-
-
-
-
+        Keep UI signal handling separate from the runtime implementation.
+        If a later module refactor breaks the runtime contract, the error is
+        reported visibly instead of being swallowed by Qt's signal dispatch.
+        """
+        try:
+            self.run_workflows()
+        except Exception as exc:
+            message = (
+                "运行失败："
+                f"{type(exc).__name__}: {exc}"
+            )
+            if hasattr(
+                self,
+                "runtime_status",
+            ):
+                self.runtime_status.setText(
+                    tr_text(message)
+                )
+            self.logger.error(
+                message,
+                source="workspace",
+            )
 
     def run_workflows(self) -> None:
         if (
