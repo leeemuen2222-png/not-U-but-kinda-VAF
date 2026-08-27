@@ -46,6 +46,7 @@ class ModuleDefinition:
     # Complex-mode ports.
     complex_inputs: Tuple[str, ...] = STANDARD_COMPLEX_INPUTS
     complex_outputs: Tuple[str, ...] = STANDARD_COMPLEX_OUTPUTS
+    complex_input_hints: Tuple[str, ...] = ()
 
     @property
     def is_visual(self) -> bool:

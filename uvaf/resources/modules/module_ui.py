@@ -1839,31 +1839,224 @@ class ClickSettingsDialog(QDialog):
         self.accept()
 
 class DragSettingsDialog(QDialog):
+    MODE_COORDINATE = "coordinate_to_coordinate"
+    MODE_PIXELS = "coordinate_drag_pixels"
+
     def __init__(self, owner, parent=None) -> None:
-        super().__init__(parent); self.owner=owner
-        self.setWindowTitle("拖动设置"); self.resize(640,500)
-        layout=QVBoxLayout(self)
-        box=QGroupBox("起始点与结束点"); b=QVBoxLayout(box)
-        r1=QHBoxLayout(); r1.addWidget(QLabel("起始 X")); self.sx=QDoubleSpinBox(); self.sx.setRange(-100000,100000); self.sx.setValue(float(getattr(owner,"drag_start_x",0))); r1.addWidget(self.sx); r1.addWidget(QLabel("Y")); self.sy=QDoubleSpinBox(); self.sy.setRange(-100000,100000); self.sy.setValue(float(getattr(owner,"drag_start_y",0))); r1.addWidget(self.sy)
-        r2=QHBoxLayout(); r2.addWidget(QLabel("结束 X")); self.ex=QDoubleSpinBox(); self.ex.setRange(-100000,100000); self.ex.setValue(float(getattr(owner,"drag_end_x",0))); r2.addWidget(self.ex); r2.addWidget(QLabel("Y")); self.ey=QDoubleSpinBox(); self.ey.setRange(-100000,100000); self.ey.setValue(float(getattr(owner,"drag_end_y",0))); r2.addWidget(self.ey)
-        b.addLayout(r1); b.addLayout(r2); layout.addWidget(box)
-        self.advanced=QCheckBox("高级模式"); self.advanced.setChecked(bool(getattr(owner,"move_advanced",False))); layout.addWidget(self.advanced)
-        group=QGroupBox("高级移动"); g=QVBoxLayout(group)
-        offs=QHBoxLayout(); self.off={}
-        for label,attr in [("上","move_offset_up"),("下","move_offset_down"),("左","move_offset_left"),("右","move_offset_right")]:
-            col=QVBoxLayout(); col.addWidget(QLabel(label)); sp=QDoubleSpinBox(); sp.setRange(-100000,100000); sp.setSuffix(" px"); sp.setValue(float(getattr(owner,attr,0))); col.addWidget(sp); offs.addLayout(col); self.off[attr]=sp
+        super().__init__(parent)
+        self.owner = owner
+        self._is_complex = hasattr(owner, "incoming") and hasattr(owner, "input_ports")
+        self.setWindowTitle(tr_text("拖动设置"))
+        self.resize(680, 560)
+
+        layout = QVBoxLayout(self)
+
+        mode_row = QHBoxLayout()
+        mode_row.addWidget(QLabel(tr_text("拖动模式")))
+        self.mode_button = QPushButton()
+        self.mode_button.clicked.connect(self._toggle_mode)
+        mode_row.addWidget(self.mode_button, 1)
+        layout.addLayout(mode_row)
+
+        self.coordinate_box = QGroupBox(tr_text("坐标至坐标"))
+        coordinate_layout = QVBoxLayout(self.coordinate_box)
+        if self._is_complex:
+            coordinate_layout.addWidget(
+                QLabel(
+                    tr_text(
+                        "复杂模式：第一个输入口接入起点坐标，第二个输入口接入终点坐标。"
+                    )
+                )
+            )
+            # Preserve the stored manual end point for backward compatibility,
+            # but do not expose it because complex mode obtains it from input_2.
+            self.ex = QDoubleSpinBox()
+            self.ey = QDoubleSpinBox()
+            self.ex.setRange(-100000, 100000)
+            self.ey.setRange(-100000, 100000)
+            self.ex.setValue(float(getattr(owner, "drag_end_x", 0)))
+            self.ey.setValue(float(getattr(owner, "drag_end_y", 0)))
+            self.ex.hide()
+            self.ey.hide()
+        else:
+            coordinate_layout.addWidget(
+                QLabel(
+                    tr_text(
+                        "起点坐标来自拖动模块上方的坐标输入；在这里手动设置终点坐标。"
+                    )
+                )
+            )
+            end_row = QHBoxLayout()
+            end_row.addWidget(QLabel(tr_text("终点 X")))
+            self.ex = QDoubleSpinBox()
+            self.ex.setRange(-100000, 100000)
+            self.ex.setDecimals(2)
+            self.ex.setValue(float(getattr(owner, "drag_end_x", 0)))
+            end_row.addWidget(self.ex)
+            end_row.addWidget(QLabel("Y"))
+            self.ey = QDoubleSpinBox()
+            self.ey.setRange(-100000, 100000)
+            self.ey.setDecimals(2)
+            self.ey.setValue(float(getattr(owner, "drag_end_y", 0)))
+            end_row.addWidget(self.ey)
+            coordinate_layout.addLayout(end_row)
+        layout.addWidget(self.coordinate_box)
+
+        self.pixel_box = QGroupBox(tr_text("坐标为起始拖动特定像素"))
+        pixel_layout = QVBoxLayout(self.pixel_box)
+        pixel_layout.addWidget(
+            QLabel(
+                tr_text(
+                    "起点坐标来自输入。填写相对起点的像素位移；正负号决定拖动方向。"
+                )
+            )
+        )
+        pixel_row = QHBoxLayout()
+        pixel_row.addWidget(QLabel(tr_text("X 像素")))
+        self.pixel_x = QDoubleSpinBox()
+        self.pixel_x.setRange(-100000, 100000)
+        self.pixel_x.setDecimals(2)
+        self.pixel_x.setSuffix(" px")
+        self.pixel_x.setValue(float(getattr(owner, "drag_pixels_x", 0)))
+        pixel_row.addWidget(self.pixel_x)
+        pixel_row.addWidget(QLabel(tr_text("Y 像素")))
+        self.pixel_y = QDoubleSpinBox()
+        self.pixel_y.setRange(-100000, 100000)
+        self.pixel_y.setDecimals(2)
+        self.pixel_y.setSuffix(" px")
+        self.pixel_y.setValue(float(getattr(owner, "drag_pixels_y", 0)))
+        pixel_row.addWidget(self.pixel_y)
+        pixel_layout.addLayout(pixel_row)
+        layout.addWidget(self.pixel_box)
+
+        self.advanced = QCheckBox(tr_text("高级模式"))
+        self.advanced.setChecked(bool(getattr(owner, "move_advanced", False)))
+        layout.addWidget(self.advanced)
+
+        group = QGroupBox(tr_text("高级移动"))
+        g = QVBoxLayout(group)
+        offs = QHBoxLayout()
+        self.off = {}
+        for label, attr in [
+            ("上", "move_offset_up"),
+            ("下", "move_offset_down"),
+            ("左", "move_offset_left"),
+            ("右", "move_offset_right"),
+        ]:
+            col = QVBoxLayout()
+            col.addWidget(QLabel(tr_text(label)))
+            sp = QDoubleSpinBox()
+            sp.setRange(-100000, 100000)
+            sp.setSuffix(" px")
+            sp.setValue(float(getattr(owner, attr, 0)))
+            col.addWidget(sp)
+            offs.addLayout(col)
+            self.off[attr] = sp
         g.addLayout(offs)
-        sr=QHBoxLayout(); sr.addWidget(QLabel("移速模式")); self.speed_mode=QComboBox(); self.speed_mode.addItem("规定时间到达（秒）","duration"); self.speed_mode.addItem("像素每秒","pixels_per_second"); idx=self.speed_mode.findData(str(getattr(owner,"move_speed_mode","duration"))); self.speed_mode.setCurrentIndex(max(0,idx)); sr.addWidget(self.speed_mode)
-        sr.addWidget(QLabel("数值")); self.speed=QDoubleSpinBox(); self.speed.setRange(0,100000); self.speed.setDecimals(3); self.speed.setValue(float(getattr(owner,"move_speed_value",0))); sr.addWidget(self.speed)
-        sr.addWidget(QLabel("移速偏移 ±")); self.var=QDoubleSpinBox(); self.var.setRange(0,100000); self.var.setDecimals(3); self.var.setValue(float(getattr(owner,"move_speed_variance",0))); sr.addWidget(self.var); g.addLayout(sr)
-        self.random=QCheckBox("随机移动路线"); self.random.setChecked(bool(getattr(owner,"move_random_route",False))); g.addWidget(self.random)
-        hr=QHBoxLayout(); hr.addWidget(QLabel("起始点按下等待")); self.press=QDoubleSpinBox(); self.press.setRange(0,60); self.press.setDecimals(3); self.press.setSuffix(" s"); self.press.setValue(float(getattr(owner,"drag_press_duration",0.025))); hr.addWidget(self.press); hr.addStretch(); g.addLayout(hr)
-        group.setEnabled(self.advanced.isChecked()); self.advanced.toggled.connect(group.setEnabled); layout.addWidget(group)
-        buttons=QHBoxLayout(); buttons.addStretch(); c=QPushButton("取消"); c.clicked.connect(self.reject); buttons.addWidget(c); ok=QPushButton("确定"); ok.clicked.connect(self._save); buttons.addWidget(ok); layout.addLayout(buttons)
-    def _save(self):
-        o=self.owner; o.drag_start_x=self.sx.value(); o.drag_start_y=self.sy.value(); o.drag_end_x=self.ex.value(); o.drag_end_y=self.ey.value(); o.drag_press_duration=self.press.value(); o.move_advanced=self.advanced.isChecked()
-        for attr,sp in self.off.items(): setattr(o,attr,sp.value())
-        o.move_speed_mode=str(self.speed_mode.currentData()); o.move_speed_value=self.speed.value(); o.move_speed_variance=self.var.value(); o.move_random_route=self.random.isChecked(); o.update(); self.accept()
+
+        sr = QHBoxLayout()
+        sr.addWidget(QLabel(tr_text("移速模式")))
+        self.speed_mode = QComboBox()
+        self.speed_mode.addItem(tr_text("规定时间到达（秒）"), "duration")
+        self.speed_mode.addItem(tr_text("像素每秒"), "pixels_per_second")
+        idx = self.speed_mode.findData(str(getattr(owner, "move_speed_mode", "duration")))
+        self.speed_mode.setCurrentIndex(max(0, idx))
+        sr.addWidget(self.speed_mode)
+        sr.addWidget(QLabel(tr_text("数值")))
+        self.speed = QDoubleSpinBox()
+        self.speed.setRange(0, 100000)
+        self.speed.setDecimals(3)
+        self.speed.setValue(float(getattr(owner, "move_speed_value", 0)))
+        sr.addWidget(self.speed)
+        sr.addWidget(QLabel(tr_text("移速偏移 ±")))
+        self.var = QDoubleSpinBox()
+        self.var.setRange(0, 100000)
+        self.var.setDecimals(3)
+        self.var.setValue(float(getattr(owner, "move_speed_variance", 0)))
+        sr.addWidget(self.var)
+        g.addLayout(sr)
+
+        self.random = QCheckBox(tr_text("随机移动路线"))
+        self.random.setChecked(bool(getattr(owner, "move_random_route", False)))
+        g.addWidget(self.random)
+
+        hr = QHBoxLayout()
+        hr.addWidget(QLabel(tr_text("起始点按下等待")))
+        self.press = QDoubleSpinBox()
+        self.press.setRange(0, 60)
+        self.press.setDecimals(3)
+        self.press.setSuffix(" s")
+        self.press.setValue(float(getattr(owner, "drag_press_duration", 0.025)))
+        hr.addWidget(self.press)
+        hr.addStretch()
+        g.addLayout(hr)
+
+        group.setEnabled(self.advanced.isChecked())
+        self.advanced.toggled.connect(group.setEnabled)
+        layout.addWidget(group)
+
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        cancel = QPushButton(tr_text("取消"))
+        cancel.clicked.connect(self.reject)
+        buttons.addWidget(cancel)
+        ok = QPushButton(tr_text("确定"))
+        ok.clicked.connect(self._save)
+        buttons.addWidget(ok)
+        layout.addLayout(buttons)
+
+        mode = str(getattr(owner, "drag_mode", self.MODE_COORDINATE))
+        if mode not in {self.MODE_COORDINATE, self.MODE_PIXELS}:
+            mode = self.MODE_COORDINATE
+        self._mode = mode
+        self._sync_mode_ui()
+
+    def _toggle_mode(self) -> None:
+        self._mode = (
+            self.MODE_PIXELS
+            if self._mode == self.MODE_COORDINATE
+            else self.MODE_COORDINATE
+        )
+        self._sync_mode_ui()
+
+    def _sync_mode_ui(self) -> None:
+        coordinate_mode = self._mode == self.MODE_COORDINATE
+        self.coordinate_box.setVisible(coordinate_mode)
+        self.pixel_box.setVisible(not coordinate_mode)
+        label = (
+            "坐标至坐标"
+            if coordinate_mode
+            else "坐标为起始拖动特定像素"
+        )
+        self.mode_button.setText(tr_text(f"模式：{label}"))
+
+    def _save(self) -> None:
+        owner = self.owner
+        owner.drag_mode = self._mode
+        owner.drag_end_x = self.ex.value()
+        owner.drag_end_y = self.ey.value()
+        owner.drag_pixels_x = self.pixel_x.value()
+        owner.drag_pixels_y = self.pixel_y.value()
+        owner.drag_press_duration = self.press.value()
+        owner.move_advanced = self.advanced.isChecked()
+        for attr, spin in self.off.items():
+            setattr(owner, attr, spin.value())
+        owner.move_speed_mode = str(self.speed_mode.currentData())
+        owner.move_speed_value = self.speed.value()
+        owner.move_speed_variance = self.var.value()
+        owner.move_random_route = self.random.isChecked()
+
+        # Complex-mode drag ports are dynamic: coordinate-to-coordinate has
+        # start + end inputs; pixel mode only needs the start input.  The node
+        # owns removal of now-invalid input_2 connections so no orphan wire is
+        # left in the scene.
+        refresh = getattr(owner, "refresh_dynamic_ports", None)
+        if callable(refresh):
+            refresh()
+
+        owner.update()
+        self.accept()
+
 
 class KeyRecorderDialog(QDialog):
     def __init__(

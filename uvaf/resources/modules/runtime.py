@@ -68,10 +68,19 @@ class ExecutionStep:
     click_press_duration: float = 0.025
     click_interval: float = 0.100
 
-    drag_start_x: float = 0.0
-    drag_start_y: float = 0.0
+    # Drag always receives its start coordinate from the current chain input.
+    # coordinate_to_coordinate: simple mode uses the manually configured end
+    # point, while complex mode can evaluate drag_end_steps from input_2.
+    # coordinate_drag_pixels: end = start + (drag_pixels_x, drag_pixels_y).
+    drag_start_x: float = 0.0  # legacy project compatibility only
+    drag_start_y: float = 0.0  # legacy project compatibility only
     drag_end_x: float = 0.0
     drag_end_y: float = 0.0
+    drag_mode: str = "coordinate_to_coordinate"
+    drag_pixels_x: float = 0.0
+    drag_pixels_y: float = 0.0
+    drag_end_from_input: bool = False
+    drag_end_steps: tuple["ExecutionStep", ...] = ()
     drag_press_duration: float = 0.025
 
     key_name: str = "SPACE"
@@ -2280,7 +2289,98 @@ class ModuleRuntimeMixin:
                         return False
 
                 elif step.module_type == "drag":
-                    opts=MoveOptions(
+                    start_coordinate = context.get("last_output")
+                    start_space = context.get("last_output_space")
+
+                    if (
+                        not isinstance(start_coordinate, (tuple, list))
+                        or len(start_coordinate) < 2
+                    ):
+                        message = (
+                            f"流程 {chain_index}："
+                            "拖动需要上一个模块提供起点坐标。"
+                        )
+                        self.logger.warning(message, source="mouse")
+                        self.runtime_signals.message.emit(message)
+                        return False
+
+                    if start_space != "global_screen":
+                        message = (
+                            f"流程 {chain_index}："
+                            "拖动拒绝非全局屏幕起点坐标。"
+                        )
+                        self.logger.warning(message, source="mouse")
+                        self.runtime_signals.message.emit(message)
+                        return False
+
+                    try:
+                        start_x = float(start_coordinate[0])
+                        start_y = float(start_coordinate[1])
+                    except (TypeError, ValueError, OverflowError):
+                        self.runtime_signals.message.emit(
+                            f"流程 {chain_index}：拖动起点坐标无效"
+                        )
+                        return False
+
+                    drag_mode = str(
+                        getattr(
+                            step,
+                            "drag_mode",
+                            "coordinate_to_coordinate",
+                        )
+                    )
+
+                    if drag_mode == "coordinate_drag_pixels":
+                        end_x = start_x + float(step.drag_pixels_x)
+                        end_y = start_y + float(step.drag_pixels_y)
+                    else:
+                        if step.drag_end_from_input:
+                            if not step.drag_end_steps:
+                                message = (
+                                    f"流程 {chain_index}："
+                                    "复杂模式拖动缺少终点坐标输入。"
+                                )
+                                self.logger.warning(message, source="mouse")
+                                self.runtime_signals.message.emit(message)
+                                return False
+
+                            end_context = dict(context)
+                            # The auxiliary endpoint branch must produce its own
+                            # coordinate rather than inheriting the start value.
+                            end_context["last_output"] = None
+                            end_context["last_output_space"] = None
+                            if not self._execute_steps(
+                                chain_index,
+                                step.drag_end_steps,
+                                end_context,
+                                active_roi,
+                                selection_anchor=selection_anchor,
+                                ignore_event_chain_cancel=ignore_event_chain_cancel,
+                                local_cancel_event=local_cancel_event,
+                            ):
+                                return False
+                            end_coordinate = end_context.get("last_output")
+                            end_space = end_context.get("last_output_space")
+                            if (
+                                not isinstance(end_coordinate, (tuple, list))
+                                or len(end_coordinate) < 2
+                                or end_space != "global_screen"
+                            ):
+                                message = (
+                                    f"流程 {chain_index}："
+                                    "拖动终点输入没有输出全局屏幕坐标。"
+                                )
+                                self.logger.warning(message, source="mouse")
+                                self.runtime_signals.message.emit(message)
+                                return False
+                            end_x = float(end_coordinate[0])
+                            end_y = float(end_coordinate[1])
+                        else:
+                            # Simple mode: endpoint is configured manually.
+                            end_x = float(step.drag_end_x)
+                            end_y = float(step.drag_end_y)
+
+                    opts = MoveOptions(
                         offset_up=step.move_offset_up if step.move_advanced else 0.0,
                         offset_down=step.move_offset_down if step.move_advanced else 0.0,
                         offset_left=step.move_offset_left if step.move_advanced else 0.0,
@@ -2290,9 +2390,27 @@ class ModuleRuntimeMixin:
                         speed_variance=step.move_speed_variance if step.move_advanced else 0.0,
                         random_route=step.move_random_route if step.move_advanced else False,
                     )
-                    final=self.mouse_action_engine.drag(step.drag_start_x,step.drag_start_y,step.drag_end_x,step.drag_end_y,options=opts,press_duration=step.drag_press_duration,stop_requested=module_cancelled)
-                    context["last_output"]=final; context["last_output_space"]="global_screen"
-                    self.logger.info(f"流程 {chain_index}：拖动 → {final}",source="mouse")
+                    final = self.mouse_action_engine.drag(
+                        start_x,
+                        start_y,
+                        end_x,
+                        end_y,
+                        options=opts,
+                        press_duration=step.drag_press_duration,
+                        stop_requested=module_cancelled,
+                    )
+                    context["last_output"] = final
+                    context["last_output_space"] = "global_screen"
+                    mode_text = (
+                        f"像素偏移 ({step.drag_pixels_x:+g}, {step.drag_pixels_y:+g})"
+                        if drag_mode == "coordinate_drag_pixels"
+                        else "坐标至坐标"
+                    )
+                    self.logger.info(
+                        f"流程 {chain_index}：拖动 {mode_text} "
+                        f"({start_x:g}, {start_y:g}) → {final}",
+                        source="mouse",
+                    )
 
                 elif step.module_type == "keyboard_input":
                     stop_requested = (

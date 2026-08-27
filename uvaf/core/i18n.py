@@ -964,6 +964,52 @@ _TRANSLATIONS.update({
     ),
 })
 
+_TRANSLATIONS.update({
+    "拖动模式": _row("拖动模式", "Drag mode", "ドラッグモード", "Modo de arrastre", "Modalità trascinamento", "Draghamur", "Modus tractus"),
+    "坐标至坐标": _row("坐标至坐标", "Coordinate to coordinate", "座標から座標", "Coordenada a coordenada", "Da coordinata a coordinata", "Hnit til hnits", "Coordinata ad coordinatam"),
+    "坐标为起始拖动特定像素": _row("坐标为起始拖动特定像素", "Drag specific pixels from coordinate", "座標を起点に指定ピクセル移動", "Arrastrar píxeles desde coordenada", "Trascina pixel dalla coordinata", "Draga tiltekna díla frá hniti", "Pixela definita a coordinata trahe"),
+    "模式：坐标至坐标": _row("模式：坐标至坐标", "Mode: Coordinate to coordinate", "モード：座標から座標", "Modo: Coordenada a coordenada", "Modalità: da coordinata a coordinata", "Hamur: hnit til hnits", "Modus: coordinata ad coordinatam"),
+    "模式：坐标为起始拖动特定像素": _row("模式：坐标为起始拖动特定像素", "Mode: Drag specific pixels from coordinate", "モード：座標を起点に指定ピクセル移動", "Modo: Arrastrar píxeles desde coordenada", "Modalità: trascina pixel dalla coordinata", "Hamur: draga díla frá hniti", "Modus: pixela a coordinata trahe"),
+    "起点坐标": _row("起点坐标", "Start coordinate", "開始座標", "Coordenada inicial", "Coordinata iniziale", "Upphafshnit", "Coordinata initialis"),
+    "终点坐标": _row("终点坐标", "End coordinate", "終了座標", "Coordenada final", "Coordinata finale", "Endahnit", "Coordinata finalis"),
+    "起点坐标来自拖动模块上方的坐标输入；在这里手动设置终点坐标。": _row(
+        "起点坐标来自拖动模块上方的坐标输入；在这里手动设置终点坐标。",
+        "The start coordinate comes from the coordinate input above Drag; set the end coordinate here.",
+        "開始座標はドラッグ上部の座標入力から取得します。ここで終了座標を設定します。",
+        "La coordenada inicial viene de la entrada superior de Arrastrar; define aquí la coordenada final.",
+        "La coordinata iniziale proviene dall'ingresso sopra Trascina; imposta qui la coordinata finale.",
+        "Upphafshnitið kemur frá hnitainntakinu fyrir ofan Draga; stilltu endahnitið hér.",
+        "Coordinata initialis ab ingressu superiore Tractus venit; coordinatam finalem hic constitue."
+    ),
+    "复杂模式：第一个输入口接入起点坐标，第二个输入口接入终点坐标。": _row(
+        "复杂模式：第一个输入口接入起点坐标，第二个输入口接入终点坐标。",
+        "Complex mode: the first input receives the start coordinate and the second receives the end coordinate.",
+        "複雑モード：1番目の入力が開始座標、2番目の入力が終了座標です。",
+        "Modo complejo: la primera entrada recibe la coordenada inicial y la segunda la final.",
+        "Modalità complessa: il primo ingresso riceve la coordinata iniziale e il secondo quella finale.",
+        "Flókinn hamur: fyrsta inntak er upphafshnit og annað endahnit.",
+        "Modus complexus: ingressus primus coordinatam initialem, secundus finalem accipit."
+    ),
+    "起点坐标来自输入。填写相对起点的像素位移；正负号决定拖动方向。": _row(
+        "起点坐标来自输入。填写相对起点的像素位移；正负号决定拖动方向。",
+        "The start coordinate comes from the input. Enter pixel offsets relative to it; signs determine drag direction.",
+        "開始座標は入力から取得します。開始点からのピクセル差分を入力し、符号で方向を指定します。",
+        "La coordenada inicial viene de la entrada. Introduce desplazamientos en píxeles; el signo determina la dirección.",
+        "La coordinata iniziale proviene dall'ingresso. Inserisci gli offset in pixel; il segno determina la direzione.",
+        "Upphafshnitið kemur frá inntaki. Sláðu inn dílahliðrun; formerki ræður stefnu.",
+        "Coordinata initialis ab ingressu venit. Discessus pixelorum insere; signum directionem definit."
+    ),
+    "终点 X": _row("终点 X", "End X", "終了 X", "X final", "X finale", "Enda X", "X finale"),
+    "X 像素": _row("X 像素", "X pixels", "X ピクセル", "Píxeles X", "Pixel X", "X dílar", "Pixela X"),
+    "Y 像素": _row("Y 像素", "Y pixels", "Y ピクセル", "Píxeles Y", "Pixel Y", "Y dílar", "Pixela Y"),
+    "起点输入": _row("起点输入", "start input", "開始入力", "entrada inicial", "ingresso iniziale", "upphafsinntak", "ingressus initialis"),
+    "拖动需要上一个模块提供起点坐标。": _row("拖动需要上一个模块提供起点坐标。", "Drag requires a start coordinate from the previous module.", "ドラッグには前のモジュールからの開始座標が必要です。", "Arrastrar necesita una coordenada inicial del módulo anterior.", "Trascina richiede una coordinata iniziale dal modulo precedente.", "Draga þarf upphafshnit frá fyrri einingu.", "Tractus coordinatam initialem a modulo priore requirit."),
+    "复杂模式拖动缺少终点坐标输入。": _row("复杂模式拖动缺少终点坐标输入。", "Complex-mode Drag is missing its end-coordinate input.", "複雑モードのドラッグに終了座標入力がありません。", "A Arrastrar en modo complejo le falta la coordenada final.", "A Trascina in modalità complessa manca la coordinata finale.", "Draga í flóknum ham vantar endahnit.", "Tractui in modo complexo coordinata finalis deest."),
+    "拖动终点输入没有输出全局屏幕坐标。": _row("拖动终点输入没有输出全局屏幕坐标。", "Drag end input did not output global screen coordinates.", "ドラッグの終了入力がグローバル画面座標を出力しませんでした。", "La entrada final de Arrastrar no produjo coordenadas globales.", "L'ingresso finale di Trascina non ha prodotto coordinate globali.", "Endainntak Draga skilaði ekki hnattrænum skjáhnitum.", "Ingressus finalis Tractus coordinatas globales scrinii non edidit."),
+    "拖动拒绝非全局屏幕起点坐标。": _row("拖动拒绝非全局屏幕起点坐标。", "Drag rejects start coordinates that are not global screen coordinates.", "ドラッグはグローバル画面座標以外の開始座標を受け付けません。", "Arrastrar rechaza coordenadas iniciales que no sean globales.", "Trascina rifiuta coordinate iniziali non globali.", "Draga hafnar upphafshnitum sem eru ekki hnattræn skjáhnit.", "Tractus coordinatas initiales non-globales recusat."),
+})
+
+
 def normalize_language(code: str | None) -> str:
     value = str(code or "zh_CN").strip()
     aliases = {

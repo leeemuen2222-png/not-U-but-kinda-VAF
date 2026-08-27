@@ -146,6 +146,13 @@ def condition_slots_for(module_type: str) -> tuple[int, ...]:
     return definition.condition_slots if definition is not None else ()
 
 
+def complex_input_hints_for(module_type: str) -> tuple[str, ...]:
+    definition = get_module_definition(module_type)
+    if definition is None:
+        return ()
+    return definition.complex_input_hints
+
+
 def complex_ports_for(module_type: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     definition = get_module_definition(module_type)
     if definition is None:
