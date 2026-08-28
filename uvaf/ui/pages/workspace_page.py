@@ -1293,14 +1293,18 @@ def paint_roi_frame(
 
 
 def logic_slot_arm_path(width: float, bar_height: float = 12.0) -> QPainterPath:
-    """Thin internal connector arm for simple-mode logic containers."""
+    """Thin internal connector arm for simple-mode logic containers.
+
+    The left side is intentionally flat so the arm can visually merge into the
+    logic container body instead of looking like a separate floating block.
+    """
     r = 5.0
     notch_x = 34.0
     notch_w = 34.0
     notch_d = 6.0
 
     path = QPainterPath()
-    path.moveTo(r, 0)
+    path.moveTo(0, 0)
     path.lineTo(width - r, 0)
     path.quadTo(width, 0, width, r)
     path.lineTo(width, bar_height - r)
@@ -1309,10 +1313,7 @@ def logic_slot_arm_path(width: float, bar_height: float = 12.0) -> QPainterPath:
     path.lineTo(notch_x + notch_w - 6, bar_height + notch_d)
     path.lineTo(notch_x + 6, bar_height + notch_d)
     path.lineTo(notch_x, bar_height)
-    path.lineTo(r, bar_height)
-    path.quadTo(0, bar_height, 0, bar_height - r)
-    path.lineTo(0, r)
-    path.quadTo(0, 0, r, 0)
+    path.lineTo(0, bar_height)
     path.closeSubpath()
     return path
 
@@ -1324,38 +1325,22 @@ def paint_logic_slot_arm(
     selected: bool = False,
 ) -> None:
     base = QColor(category.color)
-    outline = QColor(base.darker(150))
     shape = logic_slot_arm_path(width)
 
     painter.save()
     painter.setRenderHint(QPainter.Antialiasing, True)
-    painter.setPen(
-        QPen(QColor("#F2F2F2"), 1.6)
-        if selected
-        else QPen(outline, 1.0)
-    )
+
+    # The arm should visually feel like part of the logic frame itself, so it
+    # is filled directly without a strong standalone outline.
+    painter.setPen(Qt.NoPen)
     painter.setBrush(base)
     painter.drawPath(shape)
 
-    painter.setClipPath(shape)
-
-    painter.save()
-    painter.translate(0.8, 0.8)
-    highlight = QPen(QColor(255, 255, 255, 72), 1.15)
-    highlight.setJoinStyle(Qt.RoundJoin)
-    painter.setPen(highlight)
-    painter.setBrush(Qt.NoBrush)
-    painter.drawPath(shape)
-    painter.restore()
-
-    painter.save()
-    painter.translate(-0.8, -0.8)
-    shadow = QPen(QColor(0, 0, 0, 88), 1.2)
-    shadow.setJoinStyle(Qt.RoundJoin)
-    painter.setPen(shadow)
-    painter.setBrush(Qt.NoBrush)
-    painter.drawPath(shape)
-    painter.restore()
+    # A tiny selected-state rim is still allowed, but only very softly.
+    if selected:
+        painter.setPen(QPen(QColor("#F2F2F2"), 1.0))
+        painter.setBrush(Qt.NoBrush)
+        painter.drawPath(shape)
 
     painter.restore()
 
@@ -3215,6 +3200,7 @@ class LogicContainerBlock(CanvasBlock):
     FOOTER_HEIGHT=34.0
     INNER_X_OFFSET=26.0
     SLOT_ARM_HEIGHT=12.0
+    SLOT_ARM_SIDE_MARGIN=12.0
 
 
 
@@ -3309,11 +3295,20 @@ class LogicContainerBlock(CanvasBlock):
 
     def slot_arm_rect_local(self,slot_index:int)->QRectF:
         y=self.slot_top(slot_index)+self.SLOT_LABEL_HEIGHT
-        return QRectF(self.INNER_X_OFFSET,y,self.block_width-self.INNER_X_OFFSET-18,self.SLOT_ARM_HEIGHT+6.0)
+        left=self.SLOT_ARM_SIDE_MARGIN
+        right=self.SLOT_ARM_SIDE_MARGIN
+        return QRectF(left,y,self.block_width-left-right,self.SLOT_ARM_HEIGHT+6.0)
 
     def slot_content_rect_local(self,slot_index:int)->QRectF:
         arm=self.slot_arm_rect_local(slot_index)
-        return QRectF(arm.left(),arm.top()+self.SLOT_ARM_HEIGHT,arm.width(),self.slot_content_height(slot_index))
+        content_left=self.INNER_X_OFFSET
+        content_right=12.0
+        return QRectF(
+            content_left,
+            arm.top()+self.SLOT_ARM_HEIGHT,
+            max(40.0,self.block_width-content_left-content_right),
+            self.slot_content_height(slot_index),
+        )
 
     def slot_root_scene_pos(self,slot_index:int)->QPointF:
         rect=self.slot_content_rect_local(slot_index)
