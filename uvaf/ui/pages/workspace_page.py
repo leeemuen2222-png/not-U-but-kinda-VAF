@@ -93,6 +93,7 @@ from ...resources.modules import (
     VISUAL_MODULE_TYPES,
     category_by_key,
     complex_ports_for,
+    complex_input_hints_for,
     condition_slots_for,
     data_types_compatible,
     get_module_definition,
@@ -1291,6 +1292,74 @@ def paint_roi_frame(
     painter.restore()
 
 
+def logic_slot_arm_path(width: float, bar_height: float = 12.0) -> QPainterPath:
+    """Thin internal connector arm for simple-mode logic containers."""
+    r = 5.0
+    notch_x = 34.0
+    notch_w = 34.0
+    notch_d = 6.0
+
+    path = QPainterPath()
+    path.moveTo(r, 0)
+    path.lineTo(width - r, 0)
+    path.quadTo(width, 0, width, r)
+    path.lineTo(width, bar_height - r)
+    path.quadTo(width, bar_height, width - r, bar_height)
+    path.lineTo(notch_x + notch_w, bar_height)
+    path.lineTo(notch_x + notch_w - 6, bar_height + notch_d)
+    path.lineTo(notch_x + 6, bar_height + notch_d)
+    path.lineTo(notch_x, bar_height)
+    path.lineTo(r, bar_height)
+    path.quadTo(0, bar_height, 0, bar_height - r)
+    path.lineTo(0, r)
+    path.quadTo(0, 0, r, 0)
+    path.closeSubpath()
+    return path
+
+
+def paint_logic_slot_arm(
+    painter: QPainter,
+    category: BlockCategory,
+    width: float,
+    selected: bool = False,
+) -> None:
+    base = QColor(category.color)
+    outline = QColor(base.darker(150))
+    shape = logic_slot_arm_path(width)
+
+    painter.save()
+    painter.setRenderHint(QPainter.Antialiasing, True)
+    painter.setPen(
+        QPen(QColor("#F2F2F2"), 1.6)
+        if selected
+        else QPen(outline, 1.0)
+    )
+    painter.setBrush(base)
+    painter.drawPath(shape)
+
+    painter.setClipPath(shape)
+
+    painter.save()
+    painter.translate(0.8, 0.8)
+    highlight = QPen(QColor(255, 255, 255, 72), 1.15)
+    highlight.setJoinStyle(Qt.RoundJoin)
+    painter.setPen(highlight)
+    painter.setBrush(Qt.NoBrush)
+    painter.drawPath(shape)
+    painter.restore()
+
+    painter.save()
+    painter.translate(-0.8, -0.8)
+    shadow = QPen(QColor(0, 0, 0, 88), 1.2)
+    shadow.setJoinStyle(Qt.RoundJoin)
+    painter.setPen(shadow)
+    painter.setBrush(Qt.NoBrush)
+    painter.drawPath(shape)
+    painter.restore()
+
+    painter.restore()
+
+
 class PaletteBlock(QWidget):
     def __init__(
         self,
@@ -1678,7 +1747,13 @@ class CanvasBlock(QGraphicsItem):
         self.click_press_duration = 0.025
         self.click_interval = 0.100
 
-        self.drag_start_x=0.0; self.drag_start_y=0.0; self.drag_end_x=0.0; self.drag_end_y=0.0; self.drag_press_duration=0.025
+        # Drag start now comes from the coordinate input above this block.
+        # drag_start_x/y remain only for backward-compatible project loading.
+        self.drag_start_x=0.0; self.drag_start_y=0.0
+        self.drag_end_x=0.0; self.drag_end_y=0.0
+        self.drag_mode="coordinate_to_coordinate"
+        self.drag_pixels_x=0.0; self.drag_pixels_y=0.0
+        self.drag_press_duration=0.025
         self.key_name="SPACE"; self.key_mode="press"; self.key_count=1; self.key_interval=0.0; self.key_hold_duration=0.5
         self.key_advanced=False; self.key_duration_variance=0.0; self.key_interval_variance=0.0; self.key_humanized=False
         self.key_text_mode=False; self.key_text=""
@@ -2718,13 +2793,20 @@ class CanvasBlock(QGraphicsItem):
                 ),
             )
         elif self.module_type == "drag":
+            if self.drag_mode == "coordinate_drag_pixels":
+                drag_label = (
+                    f"拖动  起点输入 + "
+                    f"({self.drag_pixels_x:+.0f},{self.drag_pixels_y:+.0f}) px"
+                )
+            else:
+                drag_label = (
+                    f"拖动  起点输入 → "
+                    f"({self.drag_end_x:.0f},{self.drag_end_y:.0f})"
+                )
             painter.drawText(
                 QRectF(15,5,self.block_width-30,27),
                 Qt.AlignVCenter|Qt.AlignLeft,
-                tr_text(
-                    f"拖动  ({self.drag_start_x:.0f},{self.drag_start_y:.0f}) → "
-                    f"({self.drag_end_x:.0f},{self.drag_end_y:.0f})"
-                ),
+                tr_text(drag_label),
             )
         elif self.module_type == "keyboard_input":
             if self.key_text_mode:
@@ -3132,6 +3214,7 @@ class LogicContainerBlock(CanvasBlock):
     SLOT_GAP=10.0
     FOOTER_HEIGHT=34.0
     INNER_X_OFFSET=26.0
+    SLOT_ARM_HEIGHT=12.0
 
 
 
@@ -3215,15 +3298,22 @@ class LogicContainerBlock(CanvasBlock):
         if not chain: return self.SLOT_EMPTY_HEIGHT
         return max(self.SLOT_EMPTY_HEIGHT,sum(block.stack_step() for block in chain))
 
+    def slot_visual_height(self,slot_index:int)->float:
+        return self.SLOT_ARM_HEIGHT+self.slot_content_height(slot_index)
+
     def slot_top(self,slot_index:int)->float:
         y=self.HEADER_HEIGHT
         for index in range(slot_index):
-            y += self.SLOT_LABEL_HEIGHT+self.slot_content_height(index)+self.SLOT_GAP
+            y += self.SLOT_LABEL_HEIGHT+self.slot_visual_height(index)+self.SLOT_GAP
         return y
 
-    def slot_content_rect_local(self,slot_index:int)->QRectF:
+    def slot_arm_rect_local(self,slot_index:int)->QRectF:
         y=self.slot_top(slot_index)+self.SLOT_LABEL_HEIGHT
-        return QRectF(self.INNER_X_OFFSET,y,self.block_width-self.INNER_X_OFFSET-18,self.slot_content_height(slot_index))
+        return QRectF(self.INNER_X_OFFSET,y,self.block_width-self.INNER_X_OFFSET-18,self.SLOT_ARM_HEIGHT+6.0)
+
+    def slot_content_rect_local(self,slot_index:int)->QRectF:
+        arm=self.slot_arm_rect_local(slot_index)
+        return QRectF(arm.left(),arm.top()+self.SLOT_ARM_HEIGHT,arm.width(),self.slot_content_height(slot_index))
 
     def slot_root_scene_pos(self,slot_index:int)->QPointF:
         rect=self.slot_content_rect_local(slot_index)
@@ -3232,7 +3322,7 @@ class LogicContainerBlock(CanvasBlock):
     def required_height(self)->float:
         total=self.HEADER_HEIGHT+self.FOOTER_HEIGHT
         for index in range(self.slot_count()):
-            total += self.SLOT_LABEL_HEIGHT+self.slot_content_height(index)
+            total += self.SLOT_LABEL_HEIGHT+self.slot_visual_height(index)
             if index<self.slot_count()-1: total += self.SLOT_GAP
         return max(150.0,total)
 
@@ -3350,7 +3440,8 @@ class LogicContainerBlock(CanvasBlock):
                 tr_text("次"),
             )
         for index,label in enumerate(self.logic_slots):
-            top=self.slot_top(index); content=self.slot_content_rect_local(index)
+            top=self.slot_top(index)
+            arm=self.slot_arm_rect_local(index)
             painter.setPen(QColor(255,255,255,165)); painter.setFont(QFont("Segoe UI",8))
             painter.drawText(
                 QRectF(
@@ -3362,8 +3453,15 @@ class LogicContainerBlock(CanvasBlock):
                 Qt.AlignLeft|Qt.AlignVCenter,
                 tr_text(label),
             )
-            painter.setPen(QPen(QColor(255,255,255,75),1.0)); painter.setBrush(QColor(16,16,16,155))
-            painter.drawRoundedRect(content,6,6)
+            painter.save()
+            painter.translate(arm.left(), arm.top())
+            paint_logic_slot_arm(
+                painter,
+                self.category,
+                arm.width(),
+                selected=self.isSelected(),
+            )
+            painter.restore()
         if self.has_condition_action():
             painter.setPen(QColor("#FFE45C")); wf=QFont("Segoe UI",8); wf.setWeight(QFont.DemiBold); painter.setFont(wf)
             painter.drawText(
@@ -4576,7 +4674,13 @@ class ComplexNode(QGraphicsItem):
         self.click_advanced = False
         self.click_press_duration = 0.025
         self.click_interval = 0.100
-        self.drag_start_x=0.0; self.drag_start_y=0.0; self.drag_end_x=0.0; self.drag_end_y=0.0; self.drag_press_duration=0.025
+        # Drag start now comes from the coordinate input above this block.
+        # drag_start_x/y remain only for backward-compatible project loading.
+        self.drag_start_x=0.0; self.drag_start_y=0.0
+        self.drag_end_x=0.0; self.drag_end_y=0.0
+        self.drag_mode="coordinate_to_coordinate"
+        self.drag_pixels_x=0.0; self.drag_pixels_y=0.0
+        self.drag_press_duration=0.025
         self.key_name="SPACE"; self.key_mode="press"; self.key_count=1; self.key_interval=0.0; self.key_hold_duration=0.5
         self.key_advanced=False; self.key_duration_variance=0.0; self.key_interval_variance=0.0; self.key_humanized=False
         self.key_text_mode=False; self.key_text=""
@@ -4635,6 +4739,9 @@ class ComplexNode(QGraphicsItem):
         self.setCursor(
             Qt.OpenHandCursor
         )
+        self.setAcceptHoverEvents(True)
+        self._hover_port_name: str | None = None
+        self._hover_port_serial = 0
         self.setZValue(
             -5
             if self.module_type == "roi"
@@ -5481,6 +5588,89 @@ class ComplexNode(QGraphicsItem):
 
         finally:
             self._updating_roi_geometry = False
+
+    # --------------------------------------------------------------
+    # Dynamic module ports / delayed port hints
+    # --------------------------------------------------------------
+    def refresh_dynamic_ports(self) -> None:
+        if self.module_type != "drag":
+            return
+
+        base_inputs, _ = complex_ports_for(self.module_type)
+        desired_inputs = (
+            ("input",)
+            if self.drag_mode == "coordinate_drag_pixels"
+            else tuple(base_inputs[:2])
+        )
+
+        removed_ports = [
+            port_name
+            for port_name in self.input_ports
+            if port_name not in desired_inputs
+        ]
+        scene = self.scene()
+        if isinstance(scene, ComplexScene):
+            for port_name in removed_ports:
+                connection = self.incoming.get(port_name)
+                if connection is not None:
+                    scene.remove_connection(connection)
+
+        self.input_ports = desired_inputs
+        self._hover_port_name = None
+        self._hover_port_serial += 1
+        self.update()
+
+    def _port_hint_text(self, port_name: str) -> str:
+        if port_name not in self.input_ports:
+            return ""
+        try:
+            index = self.input_ports.index(port_name)
+        except ValueError:
+            return ""
+        hints = complex_input_hints_for(self.module_type)
+        if index < len(hints):
+            return tr_text(hints[index])
+        return ""
+
+    def _show_hover_port_hint(self, serial: int, port_name: str) -> None:
+        if serial != self._hover_port_serial or port_name != self._hover_port_name:
+            return
+        hint = self._port_hint_text(port_name)
+        if not hint:
+            return
+        scene = self.scene()
+        if not isinstance(scene, ComplexScene):
+            return
+        view = scene.primary_view()
+        if view is None:
+            return
+        scene_pos = self.port_scene_pos(port_name)
+        viewport_pos = view.mapFromScene(scene_pos)
+        global_pos = view.viewport().mapToGlobal(viewport_pos)
+        QToolTip.showText(global_pos, hint, view.viewport())
+
+    def hoverMoveEvent(self, event) -> None:
+        port_name = self.port_at(event.pos())
+        # Only input nodes currently have semantic hints.
+        if port_name not in self.input_ports:
+            port_name = None
+        if port_name != self._hover_port_name:
+            QToolTip.hideText()
+            self._hover_port_name = port_name
+            self._hover_port_serial += 1
+            serial = self._hover_port_serial
+            if port_name is not None and self._port_hint_text(port_name):
+                QTimer.singleShot(
+                    600,
+                    lambda s=serial, p=port_name: self._show_hover_port_hint(s, p),
+                )
+        super().hoverMoveEvent(event)
+
+    def hoverLeaveEvent(self, event) -> None:
+        self._hover_port_name = None
+        self._hover_port_serial += 1
+        QToolTip.hideText()
+        super().hoverLeaveEvent(event)
 
     # --------------------------------------------------------------
     # Interaction
@@ -10018,7 +10208,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                 "click_advanced": bool(item.click_advanced),
                 "click_press_duration": float(item.click_press_duration),
                 "click_interval": float(item.click_interval),
-                "drag_start_x":float(item.drag_start_x),"drag_start_y":float(item.drag_start_y),"drag_end_x":float(item.drag_end_x),"drag_end_y":float(item.drag_end_y),"drag_press_duration":float(item.drag_press_duration),
+                "drag_start_x":float(item.drag_start_x),"drag_start_y":float(item.drag_start_y),"drag_end_x":float(item.drag_end_x),"drag_end_y":float(item.drag_end_y),"drag_mode":str(getattr(item,"drag_mode","coordinate_to_coordinate")),"drag_pixels_x":float(getattr(item,"drag_pixels_x",0.0)),"drag_pixels_y":float(getattr(item,"drag_pixels_y",0.0)),"drag_press_duration":float(item.drag_press_duration),
                 "key_name":str(item.key_name),"key_mode":str(item.key_mode),"key_count":int(item.key_count),"key_interval":float(item.key_interval),"key_hold_duration":float(item.key_hold_duration),
                 "key_advanced":bool(item.key_advanced),"key_duration_variance":float(item.key_duration_variance),"key_interval_variance":float(item.key_interval_variance),"key_humanized":bool(item.key_humanized),
                 "key_text_mode":bool(item.key_text_mode),"key_text":str(item.key_text),
@@ -10179,7 +10369,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                         "click_advanced": bool(item.click_advanced),
                         "click_press_duration": float(item.click_press_duration),
                         "click_interval": float(item.click_interval),
-                        "drag_start_x":float(item.drag_start_x),"drag_start_y":float(item.drag_start_y),"drag_end_x":float(item.drag_end_x),"drag_end_y":float(item.drag_end_y),"drag_press_duration":float(item.drag_press_duration),
+                        "drag_start_x":float(item.drag_start_x),"drag_start_y":float(item.drag_start_y),"drag_end_x":float(item.drag_end_x),"drag_end_y":float(item.drag_end_y),"drag_mode":str(getattr(item,"drag_mode","coordinate_to_coordinate")),"drag_pixels_x":float(getattr(item,"drag_pixels_x",0.0)),"drag_pixels_y":float(getattr(item,"drag_pixels_y",0.0)),"drag_press_duration":float(item.drag_press_duration),
                         "key_name":str(item.key_name),"key_mode":str(item.key_mode),"key_count":int(item.key_count),"key_interval":float(item.key_interval),"key_hold_duration":float(item.key_hold_duration),
                         "key_advanced":bool(item.key_advanced),"key_duration_variance":float(item.key_duration_variance),"key_interval_variance":float(item.key_interval_variance),"key_humanized":bool(item.key_humanized),
                 "key_text_mode":bool(item.key_text_mode),"key_text":str(item.key_text),
@@ -10473,8 +10663,11 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                 record.get("click_press_duration", 0.025)
             )
             block.click_interval = float(record.get("click_interval",0.100))
-            for attr,default in [("drag_start_x",0.0),("drag_start_y",0.0),("drag_end_x",0.0),("drag_end_y",0.0),("drag_press_duration",0.025),("key_interval",0.0),("key_hold_duration",0.5),("key_duration_variance",0.0),("key_interval_variance",0.0),("delay_value",1.0),("clock_value",60.0)]:
+            for attr,default in [("drag_start_x",0.0),("drag_start_y",0.0),("drag_end_x",0.0),("drag_end_y",0.0),("drag_pixels_x",0.0),("drag_pixels_y",0.0),("drag_press_duration",0.025),("key_interval",0.0),("key_hold_duration",0.5),("key_duration_variance",0.0),("key_interval_variance",0.0),("delay_value",1.0),("clock_value",60.0)]:
                 setattr(block,attr,float(record.get(attr,default)))
+            block.drag_mode=str(record.get("drag_mode","coordinate_to_coordinate"))
+            if block.drag_mode not in {"coordinate_to_coordinate","coordinate_drag_pixels"}:
+                block.drag_mode="coordinate_to_coordinate"
             block.key_name=str(record.get("key_name","SPACE")); block.key_mode=str(record.get("key_mode","press")); block.key_count=int(record.get("key_count",1)); block.key_advanced=bool(record.get("key_advanced",False)); block.key_humanized=bool(record.get("key_humanized",False))
             block.key_text_mode=bool(record.get("key_text_mode",False)); block.key_text=str(record.get("key_text",""))
             block.executable_path=str(record.get("executable_path","")); block.delay_unit=str(record.get("delay_unit","seconds")); block.clock_unit=str(record.get("clock_unit","seconds")); block.clock_behavior=str(record.get("clock_behavior","stop"));
@@ -10828,8 +11021,12 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                 record.get("click_press_duration", 0.025)
             )
             node.click_interval = float(record.get("click_interval",0.100))
-            for attr,default in [("drag_start_x",0.0),("drag_start_y",0.0),("drag_end_x",0.0),("drag_end_y",0.0),("drag_press_duration",0.025),("key_interval",0.0),("key_hold_duration",0.5),("key_duration_variance",0.0),("key_interval_variance",0.0),("delay_value",1.0),("clock_value",60.0)]:
+            for attr,default in [("drag_start_x",0.0),("drag_start_y",0.0),("drag_end_x",0.0),("drag_end_y",0.0),("drag_pixels_x",0.0),("drag_pixels_y",0.0),("drag_press_duration",0.025),("key_interval",0.0),("key_hold_duration",0.5),("key_duration_variance",0.0),("key_interval_variance",0.0),("delay_value",1.0),("clock_value",60.0)]:
                 setattr(node,attr,float(record.get(attr,default)))
+            node.drag_mode=str(record.get("drag_mode","coordinate_to_coordinate"))
+            if node.drag_mode not in {"coordinate_to_coordinate","coordinate_drag_pixels"}:
+                node.drag_mode="coordinate_to_coordinate"
+            node.refresh_dynamic_ports()
             node.key_name=str(record.get("key_name","SPACE")); node.key_mode=str(record.get("key_mode","press")); node.key_count=int(record.get("key_count",1)); node.key_advanced=bool(record.get("key_advanced",False)); node.key_humanized=bool(record.get("key_humanized",False))
             node.key_text_mode=bool(record.get("key_text_mode",False)); node.key_text=str(record.get("key_text",""))
             node.executable_path=str(record.get("executable_path","")); node.delay_unit=str(record.get("delay_unit","seconds")); node.clock_unit=str(record.get("clock_unit","seconds")); node.clock_behavior=str(record.get("clock_behavior","stop"));
@@ -10909,6 +11106,15 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                     "input",
                 )
             )
+
+            if (
+                source_port not in source.output_ports
+                or target_port not in target.input_ports
+            ):
+                # Dynamic ports (notably Drag pixel mode) may make an old
+                # saved connection invalid. Ignore it rather than creating an
+                # invisible/orphan wire.
+                continue
 
             connection = ComplexConnection(
                 source,
@@ -11340,7 +11546,8 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
             ),
             click_press_duration=float(block.click_press_duration),
             click_interval=float(block.click_interval),
-            drag_start_x=float(block.drag_start_x),drag_start_y=float(block.drag_start_y),drag_end_x=float(block.drag_end_x),drag_end_y=float(block.drag_end_y),drag_press_duration=float(block.drag_press_duration),
+            drag_start_x=float(block.drag_start_x),drag_start_y=float(block.drag_start_y),drag_end_x=float(block.drag_end_x),drag_end_y=float(block.drag_end_y),
+            drag_mode=str(getattr(block,"drag_mode","coordinate_to_coordinate")),drag_pixels_x=float(getattr(block,"drag_pixels_x",0.0)),drag_pixels_y=float(getattr(block,"drag_pixels_y",0.0)),drag_end_from_input=False,drag_end_steps=(),drag_press_duration=float(block.drag_press_duration),
             key_name=str(block.key_name),key_mode=str(block.key_mode),key_count=int(block.key_count),key_interval=float(block.key_interval),key_hold_duration=float(block.key_hold_duration),
             key_advanced=bool(block.key_advanced),key_duration_variance=float(block.key_duration_variance),key_interval_variance=float(block.key_interval_variance),key_humanized=bool(block.key_humanized),
             key_text_mode=bool(block.key_text_mode),key_text=str(block.key_text),
@@ -11776,9 +11983,53 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
 
         return tuple(branches)
 
+    def _complex_upstream_steps_for_input(
+        self,
+        target: ComplexNode,
+        port_name: str,
+    ) -> tuple[ExecutionStep, ...]:
+        """Build an auxiliary data dependency feeding a non-primary input.
+
+        Complex mode historically treated every wire as a chain continuation.
+        Drag now needs a real second data input for its end coordinate.  Walk
+        upstream from that port, excluding event roots, so fixed-coordinate,
+        scan-template and coordinate-modify chains can produce the endpoint at
+        the moment Drag executes.
+        """
+        connection = target.incoming.get(port_name)
+        if connection is None:
+            return ()
+
+        current = connection.source
+        reversed_nodes: list[ComplexNode] = []
+        visited = {target.node_id}
+
+        while (
+            current is not None
+            and current.node_id not in visited
+            and not self._is_event_root_type(current.module_type)
+        ):
+            visited.add(current.node_id)
+            reversed_nodes.append(current)
+            previous = current.incoming.get("input")
+            if previous is None:
+                break
+            current = previous.source
+
+        reversed_nodes.reverse()
+        return tuple(
+            self._execution_step_from_complex_node(
+                node,
+                resolve_drag_dependency=False,
+            )
+            for node in reversed_nodes
+        )
+
     def _execution_step_from_complex_node(
         self,
         target: ComplexNode,
+        *,
+        resolve_drag_dependency: bool = True,
     ) -> ExecutionStep:
         if target.module_type == "custom_module_instance":
             return ExecutionStep(
@@ -11917,7 +12168,11 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
             ),
             click_press_duration=float(target.click_press_duration),
             click_interval=float(target.click_interval),
-            drag_start_x=float(target.drag_start_x),drag_start_y=float(target.drag_start_y),drag_end_x=float(target.drag_end_x),drag_end_y=float(target.drag_end_y),drag_press_duration=float(target.drag_press_duration),
+            drag_start_x=float(target.drag_start_x),drag_start_y=float(target.drag_start_y),drag_end_x=float(target.drag_end_x),drag_end_y=float(target.drag_end_y),
+            drag_mode=str(getattr(target,"drag_mode","coordinate_to_coordinate")),drag_pixels_x=float(getattr(target,"drag_pixels_x",0.0)),drag_pixels_y=float(getattr(target,"drag_pixels_y",0.0)),
+            drag_end_from_input=(target.module_type=="drag" and str(getattr(target,"drag_mode","coordinate_to_coordinate"))=="coordinate_to_coordinate"),
+            drag_end_steps=(self._complex_upstream_steps_for_input(target,"input_2") if resolve_drag_dependency and target.module_type=="drag" and str(getattr(target,"drag_mode","coordinate_to_coordinate"))=="coordinate_to_coordinate" else ()),
+            drag_press_duration=float(target.drag_press_duration),
             key_name=str(target.key_name),key_mode=str(target.key_mode),key_count=int(target.key_count),key_interval=float(target.key_interval),key_hold_duration=float(target.key_hold_duration),
             key_advanced=bool(target.key_advanced),key_duration_variance=float(target.key_duration_variance),key_interval_variance=float(target.key_interval_variance),key_humanized=bool(target.key_humanized),
             key_text_mode=bool(target.key_text_mode),key_text=str(target.key_text),
