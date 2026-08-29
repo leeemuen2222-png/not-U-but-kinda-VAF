@@ -343,6 +343,72 @@ class MouseActionEngine:
         finally:
             self._left_up()
 
+    @staticmethod
+    def _normalize_button(button: str) -> str:
+        value = str(button or "left").strip().lower()
+        aliases = {
+            "left": "left",
+            "l": "left",
+            "左": "left",
+            "左键": "left",
+            "right": "right",
+            "r": "right",
+            "右": "right",
+            "右键": "right",
+            "middle": "middle",
+            "mid": "middle",
+            "m": "middle",
+            "中": "middle",
+            "中键": "middle",
+        }
+        return aliases.get(value, "left")
+
+    def press(
+        self,
+        button: str = "left",
+        stop_requested: Callable[[], bool] | None = None,
+    ) -> bool:
+        stop_requested = stop_requested or (lambda: False)
+
+        if stop_requested():
+            return False
+
+        self._button_down(self._normalize_button(button))
+        return True
+
+    def release(
+        self,
+        button: str = "left",
+        stop_requested: Callable[[], bool] | None = None,
+    ) -> bool:
+        stop_requested = stop_requested or (lambda: False)
+
+        if stop_requested():
+            return False
+
+        self._button_up(self._normalize_button(button))
+        return True
+
+    def release_all(self) -> None:
+        """Best-effort emergency release used when UVAF Stop is pressed."""
+        for button in ("left", "right", "middle"):
+            try:
+                self._button_up(button)
+            except Exception:
+                pass
+
+    def press_left(
+        self,
+        stop_requested: Callable[[], bool] | None = None,
+    ) -> bool:
+        return self.press("left", stop_requested=stop_requested)
+
+    def release_left(
+        self,
+        stop_requested: Callable[[], bool] | None = None,
+    ) -> bool:
+        return self.release("left", stop_requested=stop_requested)
+
     def click(
         self,
         options: ClickOptions | None = None,
@@ -813,20 +879,20 @@ class MouseActionEngine:
         )
 
     @staticmethod
-    def _left_down() -> None:
+    def _button_down(button: str) -> None:
+        button = MouseActionEngine._normalize_button(button)
         if os.name == "nt":
             if _USER32 is None:
                 raise RuntimeError(
                     "Windows user32 后端不可用。"
                 )
 
-            _USER32.mouse_event(
-                0x0002,  # MOUSEEVENTF_LEFTDOWN
-                0,
-                0,
-                0,
-                0,
-            )
+            flags = {
+                "left": 0x0002,    # MOUSEEVENTF_LEFTDOWN
+                "right": 0x0008,   # MOUSEEVENTF_RIGHTDOWN
+                "middle": 0x0020,  # MOUSEEVENTF_MIDDLEDOWN
+            }
+            _USER32.mouse_event(flags[button], 0, 0, 0, 0)
             return
 
         try:
@@ -836,37 +902,41 @@ class MouseActionEngine:
                 "当前平台没有可用的鼠标执行后端。"
             ) from exc
 
-        pyautogui.mouseDown(
-            button="left"
-        )
+        pyautogui.mouseDown(button=button)
+
+    @staticmethod
+    def _button_up(button: str) -> None:
+        button = MouseActionEngine._normalize_button(button)
+        if os.name == "nt":
+            if _USER32 is None:
+                raise RuntimeError(
+                    "Windows user32 后端不可用。"
+                )
+
+            flags = {
+                "left": 0x0004,    # MOUSEEVENTF_LEFTUP
+                "right": 0x0010,   # MOUSEEVENTF_RIGHTUP
+                "middle": 0x0040,  # MOUSEEVENTF_MIDDLEUP
+            }
+            _USER32.mouse_event(flags[button], 0, 0, 0, 0)
+            return
+
+        try:
+            import pyautogui  # type: ignore
+        except ImportError as exc:
+            raise RuntimeError(
+                "当前平台没有可用的鼠标执行后端。"
+            ) from exc
+
+        pyautogui.mouseUp(button=button)
+
+    @staticmethod
+    def _left_down() -> None:
+        MouseActionEngine._button_down("left")
 
     @staticmethod
     def _left_up() -> None:
-        if os.name == "nt":
-            if _USER32 is None:
-                raise RuntimeError(
-                    "Windows user32 后端不可用。"
-                )
-
-            _USER32.mouse_event(
-                0x0004,  # MOUSEEVENTF_LEFTUP
-                0,
-                0,
-                0,
-                0,
-            )
-            return
-
-        try:
-            import pyautogui  # type: ignore
-        except ImportError as exc:
-            raise RuntimeError(
-                "当前平台没有可用的鼠标执行后端。"
-            ) from exc
-
-        pyautogui.mouseUp(
-            button="left"
-        )
+        MouseActionEngine._button_up("left")
 
     @staticmethod
     def _interruptible_sleep(

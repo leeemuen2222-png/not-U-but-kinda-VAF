@@ -68,6 +68,9 @@ class ExecutionStep:
     click_press_duration: float = 0.025
     click_interval: float = 0.100
 
+    # Standalone mouse press / release modules.
+    mouse_button: str = "left"
+
     # Drag always receives its start coordinate from the current chain input.
     # coordinate_to_coordinate: simple mode uses the manually configured end
     # point, while complex mode can evaluate drag_end_steps from input_2.
@@ -396,6 +399,14 @@ class ModuleRuntimeMixin:
             _stop_event and exits as soon as possible.
             """
             self._vision_clear_debug()
+
+            # Standalone Mouse Down modules may intentionally leave a button
+            # held across later modules. Stop must never leave Windows in a
+            # stuck mouse-button state.
+            try:
+                self.mouse_action_engine.release_all()
+            except Exception:
+                pass
 
             self._stop_event.set()
 
@@ -2211,6 +2222,94 @@ class ModuleRuntimeMixin:
                         )
                         self.runtime_signals.message.emit(
                             f"流程 {chain_index}：移至失败"
+                        )
+                        return False
+
+                elif (
+                    step.module_type
+                    == "mouse_press"
+                ):
+                    try:
+                        completed = self.mouse_action_engine.press(
+                            step.mouse_button,
+                            stop_requested=module_cancelled,
+                        )
+
+                        if self._stop_event.is_set():
+                            return False
+
+                        if not completed:
+                            return False
+
+                        button_name = {
+                            "left": "左键",
+                            "right": "右键",
+                            "middle": "中键",
+                        }.get(str(step.mouse_button), "左键")
+                        message = (
+                            f"流程 {chain_index}："
+                            f"鼠标按下 · {button_name}"
+                        )
+
+                        self.logger.info(
+                            message,
+                            source="mouse",
+                        )
+                        self.runtime_signals.message.emit(
+                            message
+                        )
+
+                    except Exception as exc:
+                        self.logger.error(
+                            f"鼠标按下失败：{exc}",
+                            source="mouse",
+                        )
+                        self.runtime_signals.message.emit(
+                            f"流程 {chain_index}：鼠标按下失败"
+                        )
+                        return False
+
+                elif (
+                    step.module_type
+                    == "mouse_release"
+                ):
+                    try:
+                        completed = self.mouse_action_engine.release(
+                            step.mouse_button,
+                            stop_requested=module_cancelled,
+                        )
+
+                        if self._stop_event.is_set():
+                            return False
+
+                        if not completed:
+                            return False
+
+                        button_name = {
+                            "left": "左键",
+                            "right": "右键",
+                            "middle": "中键",
+                        }.get(str(step.mouse_button), "左键")
+                        message = (
+                            f"流程 {chain_index}："
+                            f"鼠标抬起 · {button_name}"
+                        )
+
+                        self.logger.info(
+                            message,
+                            source="mouse",
+                        )
+                        self.runtime_signals.message.emit(
+                            message
+                        )
+
+                    except Exception as exc:
+                        self.logger.error(
+                            f"鼠标抬起失败：{exc}",
+                            source="mouse",
+                        )
+                        self.runtime_signals.message.emit(
+                            f"流程 {chain_index}：鼠标抬起失败"
                         )
                         return False
 

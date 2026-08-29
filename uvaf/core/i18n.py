@@ -1028,6 +1028,82 @@ def normalize_language(code: str | None) -> str:
     return value if value in _LANGUAGE_CODES else "zh_CN"
 
 
+
+_TRANSLATIONS.update({
+    "按下": _row("按下", "Mouse down", "マウス押下", "Pulsar ratón", "Pressione mouse", "Mús niðri", "Mus deprime"),
+    "抬起": _row("抬起", "Mouse up", "マウス解放", "Soltar ratón", "Rilascia mouse", "Mús upp", "Mus dimitte"),
+    "执行鼠标左键按下，不自动抬起。": _row(
+        "执行鼠标左键按下，不自动抬起。",
+        "Press and hold the left mouse button without releasing it automatically.",
+        "左マウスボタンを押し下げます。自動では離しません。",
+        "Presiona y mantiene el botón izquierdo del ratón sin soltarlo automáticamente.",
+        "Preme e tiene premuto il tasto sinistro del mouse senza rilasciarlo automaticamente.",
+        "Ýtir niður vinstri músarhnappinum án þess að sleppa honum sjálfkrafa.",
+        "Bullam musis sinistrum deprimit et retinet neque sponte dimittit."
+    ),
+    "执行鼠标左键抬起。": _row(
+        "执行鼠标左键抬起。",
+        "Release the left mouse button.",
+        "左マウスボタンを離します。",
+        "Suelta el botón izquierdo del ratón.",
+        "Rilascia il tasto sinistro del mouse.",
+        "Sleppir vinstri músarhnappinum.",
+        "Bullam musis sinistrum dimittit."
+    ),
+})
+
+_TRANSLATIONS.update({
+    "左键": _row("左键", "Left button", "左ボタン", "Botón izquierdo", "Tasto sinistro", "Vinstri hnappur", "Bulla sinistra"),
+    "右键": _row("右键", "Right button", "右ボタン", "Botón derecho", "Tasto destro", "Hægri hnappur", "Bulla dextra"),
+    "中键": _row("中键", "Middle button", "中ボタン", "Botón central", "Tasto centrale", "Miðhnappur", "Bulla media"),
+    "鼠标按键": _row("鼠标按键", "Mouse button", "マウスボタン", "Botón del ratón", "Pulsante del mouse", "Músarhnappur", "Bulla musis"),
+    "按下设置": _row("按下设置", "Mouse down settings", "マウス押下設定", "Ajustes de pulsación", "Impostazioni pressione mouse", "Stillingar músarhnapps niður", "Configurationes depressionis musis"),
+    "抬起设置": _row("抬起设置", "Mouse up settings", "マウス解放設定", "Ajustes de liberación", "Impostazioni rilascio mouse", "Stillingar músarhnapps upp", "Configurationes remissionis musis"),
+    "按下会保持鼠标按键处于按住状态，直到遇到对应的抬起模块。": _row(
+        "按下会保持鼠标按键处于按住状态，直到遇到对应的抬起模块。",
+        "Mouse down keeps the selected button held until a matching Mouse up module releases it.",
+        "マウス押下は、対応するマウス解放モジュールまで選択したボタンを押したままにします。",
+        "Mouse down mantiene pulsado el botón seleccionado hasta que un módulo Mouse up correspondiente lo libere.",
+        "Mouse down mantiene premuto il pulsante selezionato finché un modulo Mouse up corrispondente non lo rilascia.",
+        "Mús niður heldur völdum hnappi niðri þar til samsvarandi Mús upp eining sleppir honum.",
+        "Mus deprime bullam electam retinet donec modulus congruus Mus dimitte eam solvat."
+    ),
+    "抬起会释放所选择的鼠标按键。": _row(
+        "抬起会释放所选择的鼠标按键。",
+        "Mouse up releases the selected mouse button.",
+        "マウス解放は選択したマウスボタンを離します。",
+        "Mouse up suelta el botón del ratón seleccionado.",
+        "Mouse up rilascia il pulsante del mouse selezionato.",
+        "Mús upp sleppir völdum músarhnappi.",
+        "Mus dimitte bullam musis electam solvit."
+    ),
+    "执行所选鼠标按键的按下动作，不自动抬起。": _row(
+        "执行所选鼠标按键的按下动作，不自动抬起。",
+        "Press the selected mouse button without releasing it automatically.",
+        "選択したマウスボタンを押し下げ、自動では離しません。",
+        "Pulsa el botón del ratón seleccionado sin soltarlo automáticamente.",
+        "Preme il pulsante del mouse selezionato senza rilasciarlo automaticamente.",
+        "Ýtir niður völdum músarhnappi án þess að sleppa honum sjálfkrafa.",
+        "Bullam musis electam deprimit neque sponte dimittit."
+    ),
+    "执行所选鼠标按键的抬起动作。": _row(
+        "执行所选鼠标按键的抬起动作。",
+        "Release the selected mouse button.",
+        "選択したマウスボタンを離します。",
+        "Suelta el botón del ratón seleccionado.",
+        "Rilascia il pulsante del mouse selezionato.",
+        "Sleppir völdum músarhnappi.",
+        "Bullam musis electam dimittit."
+    ),
+})
+
+_TRANSLATIONS.update({
+    "鼠标按下": _row("鼠标按下", "Mouse down", "マウス押下", "Pulsar ratón", "Pressione mouse", "Mús niður", "Mus deprime"),
+    "鼠标抬起": _row("鼠标抬起", "Mouse up", "マウス解放", "Soltar ratón", "Rilascio mouse", "Mús upp", "Mus dimitte"),
+    "鼠标按下失败": _row("鼠标按下失败", "Mouse down failed", "マウス押下に失敗", "Falló la pulsación del ratón", "Pressione mouse non riuscita", "Mús niður mistókst", "Depressio musis defecit"),
+    "鼠标抬起失败": _row("鼠标抬起失败", "Mouse up failed", "マウス解放に失敗", "Falló la liberación del ratón", "Rilascio mouse non riuscito", "Mús upp mistókst", "Remissio musis defecit"),
+})
+
 def current_language() -> str:
     return _CURRENT_LANGUAGE
 

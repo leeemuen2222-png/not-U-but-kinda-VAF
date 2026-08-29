@@ -1838,6 +1838,77 @@ class ClickSettingsDialog(QDialog):
 
         self.accept()
 
+
+class MouseButtonSettingsDialog(QDialog):
+    BUTTONS = (
+        ("左键", "left"),
+        ("右键", "right"),
+        ("中键", "middle"),
+    )
+
+    def __init__(self, owner, parent=None) -> None:
+        super().__init__(parent)
+        self.owner = owner
+
+        module_type = str(getattr(owner, "module_type", "mouse_press"))
+        title = "按下设置" if module_type == "mouse_press" else "抬起设置"
+        self.setWindowTitle(tr_text(title))
+        self.setModal(True)
+        self.resize(430, 190)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(12)
+
+        row = QHBoxLayout()
+        row.addWidget(QLabel(tr_text("鼠标按键")))
+
+        self.button_combo = QComboBox()
+        for label, value in self.BUTTONS:
+            self.button_combo.addItem(tr_text(label), value)
+
+        current = str(getattr(owner, "mouse_button", "left"))
+        index = self.button_combo.findData(current)
+        self.button_combo.setCurrentIndex(max(0, index))
+        row.addWidget(self.button_combo, 1)
+        layout.addLayout(row)
+
+        if module_type == "mouse_press":
+            hint = QLabel(
+                tr_text("按下会保持鼠标按键处于按住状态，直到遇到对应的抬起模块。"),
+                objectName="muted",
+            )
+        else:
+            hint = QLabel(
+                tr_text("抬起会释放所选择的鼠标按键。"),
+                objectName="muted",
+            )
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+
+        layout.addStretch()
+        bottom = QHBoxLayout()
+        bottom.addStretch()
+        cancel = QPushButton(tr_text("取消"), objectName="secondaryButton")
+        cancel.clicked.connect(self.reject)
+        bottom.addWidget(cancel)
+        confirm = QPushButton(tr_text("确定"), objectName="primaryButton")
+        confirm.clicked.connect(self._accept_settings)
+        bottom.addWidget(confirm)
+        layout.addLayout(bottom)
+
+    def _accept_settings(self) -> None:
+        value = str(self.button_combo.currentData() or "left")
+        if value not in {"left", "right", "middle"}:
+            value = "left"
+        self.owner.mouse_button = value
+        try:
+            self.owner.update()
+        except Exception:
+            pass
+        self.accept()
+
+
 class DragSettingsDialog(QDialog):
     MODE_COORDINATE = "coordinate_to_coordinate"
     MODE_PIXELS = "coordinate_drag_pixels"
@@ -4339,6 +4410,7 @@ def open_module_settings_dialog(
         "coordinate_modify": CoordinateModifySettingsDialog,
         "move_to": MoveToSettingsDialog,
         "click": ClickSettingsDialog,
+        "mouse_button": MouseButtonSettingsDialog,
         "drag": DragSettingsDialog,
         "keyboard_input": KeyboardSettingsDialog,
         "launch_exe": LaunchExeSettingsDialog,

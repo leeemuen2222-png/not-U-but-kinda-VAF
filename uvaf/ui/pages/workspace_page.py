@@ -1731,6 +1731,7 @@ class CanvasBlock(QGraphicsItem):
         self.click_advanced = False
         self.click_press_duration = 0.025
         self.click_interval = 0.100
+        self.mouse_button = "left"
 
         # Drag start now comes from the coordinate input above this block.
         # drag_start_x/y remain only for backward-compatible project loading.
@@ -2777,6 +2778,18 @@ class CanvasBlock(QGraphicsItem):
                     )
                 ),
             )
+        elif self.module_type in {"mouse_press", "mouse_release"}:
+            button_text = {
+                "left": tr_text("左键"),
+                "right": tr_text("右键"),
+                "middle": tr_text("中键"),
+            }.get(str(getattr(self, "mouse_button", "left")), tr_text("左键"))
+            action_text = tr_text("按下") if self.module_type == "mouse_press" else tr_text("抬起")
+            painter.drawText(
+                QRectF(15, 5, self.block_width - 30, 27),
+                Qt.AlignVCenter | Qt.AlignLeft,
+                f"{action_text} · {button_text}",
+            )
         elif self.module_type == "drag":
             if self.drag_mode == "coordinate_drag_pixels":
                 drag_label = (
@@ -3295,8 +3308,11 @@ class LogicContainerBlock(CanvasBlock):
 
     def slot_arm_rect_local(self,slot_index:int)->QRectF:
         y=self.slot_top(slot_index)+self.SLOT_LABEL_HEIGHT
-        left=self.SLOT_ARM_SIDE_MARGIN
-        right=self.SLOT_ARM_SIDE_MARGIN
+        # Keep the internal connector arm horizontally aligned with the child
+        # stack start position so the arm tooth and the inserted module tooth
+        # interlock as one continuous connector.
+        left=self.INNER_X_OFFSET
+        right=12.0
         return QRectF(left,y,self.block_width-left-right,self.SLOT_ARM_HEIGHT+6.0)
 
     def slot_content_rect_local(self,slot_index:int)->QRectF:
@@ -4669,6 +4685,7 @@ class ComplexNode(QGraphicsItem):
         self.click_advanced = False
         self.click_press_duration = 0.025
         self.click_interval = 0.100
+        self.mouse_button = "left"
         # Drag start now comes from the coordinate input above this block.
         # drag_start_x/y remain only for backward-compatible project loading.
         self.drag_start_x=0.0; self.drag_start_y=0.0
@@ -4995,6 +5012,13 @@ class ComplexNode(QGraphicsItem):
             if self.module_type == "custom_module_instance"
             else tr_text(module_label)
         )
+        if self.module_type in {"mouse_press", "mouse_release"}:
+            button_text = {
+                "left": tr_text("左键"),
+                "right": tr_text("右键"),
+                "middle": tr_text("中键"),
+            }.get(str(getattr(self, "mouse_button", "left")), tr_text("左键"))
+            label = f"{label} · {button_text}"
 
         painter.drawText(
             QRectF(
@@ -10203,6 +10227,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                 "click_advanced": bool(item.click_advanced),
                 "click_press_duration": float(item.click_press_duration),
                 "click_interval": float(item.click_interval),
+                "mouse_button": str(getattr(item, "mouse_button", "left")),
                 "drag_start_x":float(item.drag_start_x),"drag_start_y":float(item.drag_start_y),"drag_end_x":float(item.drag_end_x),"drag_end_y":float(item.drag_end_y),"drag_mode":str(getattr(item,"drag_mode","coordinate_to_coordinate")),"drag_pixels_x":float(getattr(item,"drag_pixels_x",0.0)),"drag_pixels_y":float(getattr(item,"drag_pixels_y",0.0)),"drag_press_duration":float(item.drag_press_duration),
                 "key_name":str(item.key_name),"key_mode":str(item.key_mode),"key_count":int(item.key_count),"key_interval":float(item.key_interval),"key_hold_duration":float(item.key_hold_duration),
                 "key_advanced":bool(item.key_advanced),"key_duration_variance":float(item.key_duration_variance),"key_interval_variance":float(item.key_interval_variance),"key_humanized":bool(item.key_humanized),
@@ -10364,6 +10389,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                         "click_advanced": bool(item.click_advanced),
                         "click_press_duration": float(item.click_press_duration),
                         "click_interval": float(item.click_interval),
+                        "mouse_button": str(getattr(item, "mouse_button", "left")),
                         "drag_start_x":float(item.drag_start_x),"drag_start_y":float(item.drag_start_y),"drag_end_x":float(item.drag_end_x),"drag_end_y":float(item.drag_end_y),"drag_mode":str(getattr(item,"drag_mode","coordinate_to_coordinate")),"drag_pixels_x":float(getattr(item,"drag_pixels_x",0.0)),"drag_pixels_y":float(getattr(item,"drag_pixels_y",0.0)),"drag_press_duration":float(item.drag_press_duration),
                         "key_name":str(item.key_name),"key_mode":str(item.key_mode),"key_count":int(item.key_count),"key_interval":float(item.key_interval),"key_hold_duration":float(item.key_hold_duration),
                         "key_advanced":bool(item.key_advanced),"key_duration_variance":float(item.key_duration_variance),"key_interval_variance":float(item.key_interval_variance),"key_humanized":bool(item.key_humanized),
@@ -10658,6 +10684,9 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                 record.get("click_press_duration", 0.025)
             )
             block.click_interval = float(record.get("click_interval",0.100))
+            block.mouse_button = str(record.get("mouse_button", "left"))
+            if block.mouse_button not in {"left", "right", "middle"}:
+                block.mouse_button = "left"
             for attr,default in [("drag_start_x",0.0),("drag_start_y",0.0),("drag_end_x",0.0),("drag_end_y",0.0),("drag_pixels_x",0.0),("drag_pixels_y",0.0),("drag_press_duration",0.025),("key_interval",0.0),("key_hold_duration",0.5),("key_duration_variance",0.0),("key_interval_variance",0.0),("delay_value",1.0),("clock_value",60.0)]:
                 setattr(block,attr,float(record.get(attr,default)))
             block.drag_mode=str(record.get("drag_mode","coordinate_to_coordinate"))
@@ -11016,6 +11045,9 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                 record.get("click_press_duration", 0.025)
             )
             node.click_interval = float(record.get("click_interval",0.100))
+            node.mouse_button = str(record.get("mouse_button", "left"))
+            if node.mouse_button not in {"left", "right", "middle"}:
+                node.mouse_button = "left"
             for attr,default in [("drag_start_x",0.0),("drag_start_y",0.0),("drag_end_x",0.0),("drag_end_y",0.0),("drag_pixels_x",0.0),("drag_pixels_y",0.0),("drag_press_duration",0.025),("key_interval",0.0),("key_hold_duration",0.5),("key_duration_variance",0.0),("key_interval_variance",0.0),("delay_value",1.0),("clock_value",60.0)]:
                 setattr(node,attr,float(record.get(attr,default)))
             node.drag_mode=str(record.get("drag_mode","coordinate_to_coordinate"))
@@ -11541,6 +11573,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
             ),
             click_press_duration=float(block.click_press_duration),
             click_interval=float(block.click_interval),
+            mouse_button=str(getattr(block, "mouse_button", "left")),
             drag_start_x=float(block.drag_start_x),drag_start_y=float(block.drag_start_y),drag_end_x=float(block.drag_end_x),drag_end_y=float(block.drag_end_y),
             drag_mode=str(getattr(block,"drag_mode","coordinate_to_coordinate")),drag_pixels_x=float(getattr(block,"drag_pixels_x",0.0)),drag_pixels_y=float(getattr(block,"drag_pixels_y",0.0)),drag_end_from_input=False,drag_end_steps=(),drag_press_duration=float(block.drag_press_duration),
             key_name=str(block.key_name),key_mode=str(block.key_mode),key_count=int(block.key_count),key_interval=float(block.key_interval),key_hold_duration=float(block.key_hold_duration),
@@ -12163,6 +12196,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
             ),
             click_press_duration=float(target.click_press_duration),
             click_interval=float(target.click_interval),
+            mouse_button=str(getattr(target, "mouse_button", "left")),
             drag_start_x=float(target.drag_start_x),drag_start_y=float(target.drag_start_y),drag_end_x=float(target.drag_end_x),drag_end_y=float(target.drag_end_y),
             drag_mode=str(getattr(target,"drag_mode","coordinate_to_coordinate")),drag_pixels_x=float(getattr(target,"drag_pixels_x",0.0)),drag_pixels_y=float(getattr(target,"drag_pixels_y",0.0)),
             drag_end_from_input=(target.module_type=="drag" and str(getattr(target,"drag_mode","coordinate_to_coordinate"))=="coordinate_to_coordinate"),
