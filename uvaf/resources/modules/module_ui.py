@@ -2811,7 +2811,7 @@ class DelaySettingsDialog(QDialog):
         super().__init__(parent); self.owner=owner; self.setWindowTitle("延时等待设置")
         layout=QVBoxLayout(self); r=QHBoxLayout(); r.addWidget(QLabel("时长")); self.value=QDoubleSpinBox(); self.value.setRange(0,100000000); self.value.setDecimals(3); self.value.setValue(float(getattr(owner,"delay_value",1))); r.addWidget(self.value); self.unit=QComboBox()
         for label,data in self.UNITS:self.unit.addItem(label,data)
-        idx=self.unit.findData(str(getattr(owner,"delay_unit","seconds"))); self.unit.setCurrentIndex(max(0,idx)); r.addWidget(self.unit); layout.addLayout(r)
+        idx=self.unit.findData(str(getattr(owner,"delay_unit","milliseconds"))); self.unit.setCurrentIndex(max(0,idx)); r.addWidget(self.unit); layout.addLayout(r)
         br=QHBoxLayout(); br.addStretch(); c=QPushButton("取消"); c.clicked.connect(self.reject); br.addWidget(c); ok=QPushButton("确定"); ok.clicked.connect(self._save); br.addWidget(ok); layout.addLayout(br)
     def _save(self):
         self.owner.delay_value=self.value.value(); self.owner.delay_unit=str(self.unit.currentData()); sync=getattr(self.owner,"sync_inline_action_controls",None); sync() if callable(sync) else None; self.accept()

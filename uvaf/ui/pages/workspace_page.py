@@ -1743,7 +1743,7 @@ class CanvasBlock(QGraphicsItem):
         self.key_name="SPACE"; self.key_mode="press"; self.key_count=1; self.key_interval=0.0; self.key_hold_duration=0.5
         self.key_advanced=False; self.key_duration_variance=0.0; self.key_interval_variance=0.0; self.key_humanized=False
         self.key_text_mode=False; self.key_text=""
-        self.executable_path=""; self.delay_value=1.0; self.delay_unit="seconds"
+        self.executable_path=""; self.delay_value=1.0; self.delay_unit="milliseconds"
         self.clock_value=60.0; self.clock_unit="seconds"; self.clock_behavior="stop"
         self.clock_event_slot=0; self.clock_event_claimed=False
 
@@ -1990,6 +1990,11 @@ class CanvasBlock(QGraphicsItem):
     def _build_inline_delay_controls(self) -> None:
         spin=QDoubleSpinBox(); spin.setRange(0,100000000); spin.setDecimals(3); spin.setFixedSize(120,24); spin.setValue(self.delay_value)
         combo=QComboBox(); [combo.addItem(label,data) for label,data in DelaySettingsDialog.UNITS]; combo.setFixedSize(90,24)
+        # The displayed unit and the stored execution unit must always agree.
+        # New delay modules default to milliseconds.
+        idx=combo.findData(str(self.delay_unit))
+        combo.setCurrentIndex(max(0,idx))
+        self.delay_unit=str(combo.currentData())
         spin.valueChanged.connect(lambda v:setattr(self,"delay_value",float(v))); combo.currentIndexChanged.connect(lambda _i:setattr(self,"delay_unit",str(combo.currentData())))
         p=QGraphicsProxyWidget(self); p.setWidget(spin); p.setPos(90,7); p.setZValue(31); q=QGraphicsProxyWidget(self); q.setWidget(combo); q.setPos(215,7); q.setZValue(31)
         self.inline_delay_spin=spin; self.inline_delay_unit=combo
@@ -4696,7 +4701,7 @@ class ComplexNode(QGraphicsItem):
         self.key_name="SPACE"; self.key_mode="press"; self.key_count=1; self.key_interval=0.0; self.key_hold_duration=0.5
         self.key_advanced=False; self.key_duration_variance=0.0; self.key_interval_variance=0.0; self.key_humanized=False
         self.key_text_mode=False; self.key_text=""
-        self.executable_path=""; self.delay_value=1.0; self.delay_unit="seconds"; self.clock_value=60.0; self.clock_unit="seconds"; self.clock_behavior="stop"
+        self.executable_path=""; self.delay_value=1.0; self.delay_unit="milliseconds"; self.clock_value=60.0; self.clock_unit="seconds"; self.clock_behavior="stop"
         self.clock_event_slot=0; self.clock_event_claimed=False
 
         self.fixed_coordinate_x=0
@@ -10694,7 +10699,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
                 block.drag_mode="coordinate_to_coordinate"
             block.key_name=str(record.get("key_name","SPACE")); block.key_mode=str(record.get("key_mode","press")); block.key_count=int(record.get("key_count",1)); block.key_advanced=bool(record.get("key_advanced",False)); block.key_humanized=bool(record.get("key_humanized",False))
             block.key_text_mode=bool(record.get("key_text_mode",False)); block.key_text=str(record.get("key_text",""))
-            block.executable_path=str(record.get("executable_path","")); block.delay_unit=str(record.get("delay_unit","seconds")); block.clock_unit=str(record.get("clock_unit","seconds")); block.clock_behavior=str(record.get("clock_behavior","stop"));
+            block.executable_path=str(record.get("executable_path","")); block.delay_unit=str(record.get("delay_unit","milliseconds")); block.clock_unit=str(record.get("clock_unit","seconds")); block.clock_behavior=str(record.get("clock_behavior","stop"));
             block.clock_event_slot=int(record.get("clock_event_slot",0) or 0); block.clock_event_claimed=bool(record.get("clock_event_claimed",False)); block.sync_inline_action_controls()
             block.loop_count=max(1,int(record.get("loop_count",1)))
             block.loop_infinite=bool(record.get("loop_infinite",False))
@@ -11056,7 +11061,7 @@ class WorkspacePage(ModuleRuntimeMixin, QWidget):
             node.refresh_dynamic_ports()
             node.key_name=str(record.get("key_name","SPACE")); node.key_mode=str(record.get("key_mode","press")); node.key_count=int(record.get("key_count",1)); node.key_advanced=bool(record.get("key_advanced",False)); node.key_humanized=bool(record.get("key_humanized",False))
             node.key_text_mode=bool(record.get("key_text_mode",False)); node.key_text=str(record.get("key_text",""))
-            node.executable_path=str(record.get("executable_path","")); node.delay_unit=str(record.get("delay_unit","seconds")); node.clock_unit=str(record.get("clock_unit","seconds")); node.clock_behavior=str(record.get("clock_behavior","stop"));
+            node.executable_path=str(record.get("executable_path","")); node.delay_unit=str(record.get("delay_unit","milliseconds")); node.clock_unit=str(record.get("clock_unit","seconds")); node.clock_behavior=str(record.get("clock_behavior","stop"));
             node.clock_event_slot=int(record.get("clock_event_slot",0) or 0); node.clock_event_claimed=bool(record.get("clock_event_claimed",False))
             node.loop_count=max(1,int(record.get("loop_count",1)))
             node.loop_infinite=bool(record.get("loop_infinite",False))

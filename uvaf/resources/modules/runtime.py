@@ -101,7 +101,7 @@ class ExecutionStep:
     executable_path: str = ""
 
     delay_value: float = 1.0
-    delay_unit: str = "seconds"
+    delay_unit: str = "milliseconds"
 
     clock_value: float = 60.0
     clock_unit: str = "seconds"
