@@ -1010,6 +1010,37 @@ _TRANSLATIONS.update({
 })
 
 
+_TRANSLATIONS.update({
+    "请切换到窗口模式": _row(
+        "请切换到窗口模式",
+        "Switch to windowed mode",
+        "ウィンドウモードに切り替えてください",
+        "Cambia al modo ventana",
+        "Passa alla modalità finestra",
+        "Skiptu í gluggaham",
+        "Ad modum fenestrae muta",
+    ),
+    "这个教程步骤会运行桌面自动化流程。UVAF 如果处于全屏或最大化状态，会遮住需要识别和点击的桌面内容。\n\n请点击窗口右上角的“还原”按钮，将 UVAF 调整为窗口模式，并在桌面上留出可见区域，然后再点击 Run。教程会根据新的窗口大小自动重新定位提示和高亮框。": _row(
+        "这个教程步骤会运行桌面自动化流程。UVAF 如果处于全屏或最大化状态，会遮住需要识别和点击的桌面内容。\n\n请点击窗口右上角的“还原”按钮，将 UVAF 调整为窗口模式，并在桌面上留出可见区域，然后再点击 Run。教程会根据新的窗口大小自动重新定位提示和高亮框。",
+        "This tutorial step runs desktop automation. If UVAF is fullscreen or maximized, it can cover desktop content that must be recognized and clicked.\n\nUse the Restore button in the upper-right corner to put UVAF in windowed mode and leave part of the desktop visible, then click Run again. The tutorial will automatically reposition its prompt and highlight for the new window size.",
+        "この手順ではデスクトップ自動化を実行します。UVAF が全画面または最大化されていると、認識・クリックする必要のあるデスクトップ領域を覆ってしまいます。\n\n右上の「元に戻す」ボタンで UVAF をウィンドウ表示にし、デスクトップの一部が見える状態にしてから、もう一度 Run をクリックしてください。チュートリアルの説明とハイライトは新しいウィンドウサイズに自動で再配置されます。",
+        "Este paso ejecuta automatización del escritorio. Si UVAF está a pantalla completa o maximizado, puede cubrir el contenido del escritorio que debe reconocer y pulsar.\n\nUsa el botón Restaurar de la esquina superior derecha para poner UVAF en modo ventana y dejar visible parte del escritorio; después vuelve a pulsar Run. El tutorial recolocará automáticamente el mensaje y el resaltado según el nuevo tamaño de la ventana.",
+        "Questo passaggio esegue un'automazione del desktop. Se UVAF è a schermo intero o massimizzato, può coprire il contenuto del desktop che deve essere riconosciuto e cliccato.\n\nUsa il pulsante Ripristina in alto a destra per mettere UVAF in modalità finestra e lasciare visibile una parte del desktop, quindi fai di nuovo clic su Run. Il tutorial riposizionerà automaticamente messaggio ed evidenziazione in base alle nuove dimensioni della finestra.",
+        "Þetta skref keyrir sjálfvirkni á skjáborðinu. Ef UVAF er í fullum skjá eða hámarkað getur það hulið efni á skjáborðinu sem þarf að greina og smella á.\n\nNotaðu Endurheimta-hnappinn efst til hægri til að setja UVAF í gluggaham og skilja hluta skjáborðsins sýnilegan. Smelltu síðan aftur á Run. Kennslan staðsetur sjálfkrafa skilaboð og áherslur miðað við nýja gluggastærð.",
+        "Hic gradus automationem desktop exsequitur. Si UVAF totum scrinium implet vel maximatur, ea quae recognoscenda et premenda sunt in desktop tegere potest.\n\nUtere instrumento Restitue in angulo superiore dextro ut UVAF in modum fenestrae reducas et partem desktop visibilem relinquas; deinde Run iterum preme. Institutio nuntium et signum secundum novam magnitudinem fenestrae automatice collocabit.",
+    ),
+})
+
+
+_TRANSLATIONS.update({
+    "打开完整模块教程": _row("打开完整模块教程", "Open full module guide", "完全モジュールガイドを開く", "Abrir guía completa de módulos", "Apri guida completa dei moduli", "Opna heildarhandbók eininga", "Ducem modulorum completum aperi"),
+    "打开完整模块手册": _row("打开完整模块手册", "Open complete module manual", "完全モジュールマニュアルを開く", "Abrir manual completo de módulos", "Apri manuale completo dei moduli", "Opna heildarhandbók eininga", "Manuale modulorum completum aperi"),
+    "UVAF 完整模块手册": _row("UVAF 完整模块手册", "UVAF Complete Module Manual", "UVAF 完全モジュールマニュアル", "Manual completo de módulos de UVAF", "Manuale completo dei moduli UVAF", "Heildarhandbók UVAF-eininga", "Manuale modulorum UVAF completum"),
+    "在动作之间加入延迟": _row("在动作之间加入延迟", "Add a delay between actions", "アクション間に待機を追加", "Añade una espera entre acciones", "Aggiungi un'attesa tra le azioni", "Bættu bið milli aðgerða", "Moram inter actiones adde"),
+    "设置合适的延迟": _row("设置合适的延迟", "Set an appropriate delay", "適切な待機時間を設定", "Configura una espera adecuada", "Imposta un'attesa adeguata", "Stilltu hæfilega bið", "Moram aptam constitue"),
+    "交互式教程需要使用窗口模式。": _row("交互式教程需要使用窗口模式。", "The interactive tutorial requires windowed mode.", "対話型チュートリアルにはウィンドウモードが必要です。", "El tutorial interactivo requiere el modo ventana.", "Il tutorial interattivo richiede la modalità finestra.", "Gagnvirka kennslan krefst gluggahams.", "Doctrina interactiva modum fenestrae requirit."),
+})
+
 def normalize_language(code: str | None) -> str:
     value = str(code or "zh_CN").strip()
     aliases = {
@@ -1052,56 +1083,18 @@ _TRANSLATIONS.update({
     ),
 })
 
-_TRANSLATIONS.update({
-    "左键": _row("左键", "Left button", "左ボタン", "Botón izquierdo", "Tasto sinistro", "Vinstri hnappur", "Bulla sinistra"),
-    "右键": _row("右键", "Right button", "右ボタン", "Botón derecho", "Tasto destro", "Hægri hnappur", "Bulla dextra"),
-    "中键": _row("中键", "Middle button", "中ボタン", "Botón central", "Tasto centrale", "Miðhnappur", "Bulla media"),
-    "鼠标按键": _row("鼠标按键", "Mouse button", "マウスボタン", "Botón del ratón", "Pulsante del mouse", "Músarhnappur", "Bulla musis"),
-    "按下设置": _row("按下设置", "Mouse down settings", "マウス押下設定", "Ajustes de pulsación", "Impostazioni pressione mouse", "Stillingar músarhnapps niður", "Configurationes depressionis musis"),
-    "抬起设置": _row("抬起设置", "Mouse up settings", "マウス解放設定", "Ajustes de liberación", "Impostazioni rilascio mouse", "Stillingar músarhnapps upp", "Configurationes remissionis musis"),
-    "按下会保持鼠标按键处于按住状态，直到遇到对应的抬起模块。": _row(
-        "按下会保持鼠标按键处于按住状态，直到遇到对应的抬起模块。",
-        "Mouse down keeps the selected button held until a matching Mouse up module releases it.",
-        "マウス押下は、対応するマウス解放モジュールまで選択したボタンを押したままにします。",
-        "Mouse down mantiene pulsado el botón seleccionado hasta que un módulo Mouse up correspondiente lo libere.",
-        "Mouse down mantiene premuto il pulsante selezionato finché un modulo Mouse up corrispondente non lo rilascia.",
-        "Mús niður heldur völdum hnappi niðri þar til samsvarandi Mús upp eining sleppir honum.",
-        "Mus deprime bullam electam retinet donec modulus congruus Mus dimitte eam solvat."
-    ),
-    "抬起会释放所选择的鼠标按键。": _row(
-        "抬起会释放所选择的鼠标按键。",
-        "Mouse up releases the selected mouse button.",
-        "マウス解放は選択したマウスボタンを離します。",
-        "Mouse up suelta el botón del ratón seleccionado.",
-        "Mouse up rilascia il pulsante del mouse selezionato.",
-        "Mús upp sleppir völdum músarhnappi.",
-        "Mus dimitte bullam musis electam solvit."
-    ),
-    "执行所选鼠标按键的按下动作，不自动抬起。": _row(
-        "执行所选鼠标按键的按下动作，不自动抬起。",
-        "Press the selected mouse button without releasing it automatically.",
-        "選択したマウスボタンを押し下げ、自動では離しません。",
-        "Pulsa el botón del ratón seleccionado sin soltarlo automáticamente.",
-        "Preme il pulsante del mouse selezionato senza rilasciarlo automaticamente.",
-        "Ýtir niður völdum músarhnappi án þess að sleppa honum sjálfkrafa.",
-        "Bullam musis electam deprimit neque sponte dimittit."
-    ),
-    "执行所选鼠标按键的抬起动作。": _row(
-        "执行所选鼠标按键的抬起动作。",
-        "Release the selected mouse button.",
-        "選択したマウスボタンを離します。",
-        "Suelta el botón del ratón seleccionado.",
-        "Rilascia il pulsante del mouse selezionato.",
-        "Sleppir völdum músarhnappi.",
-        "Bullam musis electam dimittit."
-    ),
-})
 
 _TRANSLATIONS.update({
-    "鼠标按下": _row("鼠标按下", "Mouse down", "マウス押下", "Pulsar ratón", "Pressione mouse", "Mús niður", "Mus deprime"),
-    "鼠标抬起": _row("鼠标抬起", "Mouse up", "マウス解放", "Soltar ratón", "Rilascio mouse", "Mús upp", "Mus dimitte"),
-    "鼠标按下失败": _row("鼠标按下失败", "Mouse down failed", "マウス押下に失敗", "Falló la pulsación del ratón", "Pressione mouse non riuscita", "Mús niður mistókst", "Depressio musis defecit"),
-    "鼠标抬起失败": _row("鼠标抬起失败", "Mouse up failed", "マウス解放に失敗", "Falló la liberación del ratón", "Rilascio mouse non riuscito", "Mús upp mistókst", "Remissio musis defecit"),
+    "教程": _row("教程", "Tutorial", "チュートリアル", "Tutorial", "Tutorial", "Kennsla", "Institutio"),
+    "再次开始教程": _row("再次开始教程", "Restart tutorial", "チュートリアルを再開", "Reiniciar tutorial", "Riavvia tutorial", "Endurræsa kennslu", "Institutionem repete"),
+    "让我们开始吧": _row("让我们开始吧", "Let's begin", "始めましょう", "Empecemos", "Iniziamo", "Byrjum", "Incipiamus"),
+    "跳过教程（不建议）": _row("跳过教程（不建议）", "Skip tutorial (not recommended)", "チュートリアルをスキップ（非推奨）", "Omitir tutorial (no recomendado)", "Salta tutorial (sconsigliato)", "Sleppa kennslu (ekki mælt með)", "Institutionem omitte (non suadetur)"),
+    "UVAF 教程": _row("UVAF 教程", "UVAF Tutorial", "UVAF チュートリアル", "Tutorial de UVAF", "Tutorial UVAF", "UVAF kennsla", "Institutio UVAF"),
+    "欢迎使用 UVAF": _row("欢迎使用 UVAF", "Welcome to UVAF", "UVAF へようこそ", "Bienvenido a UVAF", "Benvenuto in UVAF", "Velkomin í UVAF", "Salve in UVAF"),
+    "继续": _row("继续", "Continue", "続ける", "Continuar", "Continua", "Halda áfram", "Perge"),
+    "清空并开始训练": _row("清空并开始训练", "Clear and start training", "クリアして練習開始", "Borrar e iniciar práctica", "Pulisci e inizia pratica", "Hreinsa og hefja æfingu", "Purga et exercitationem incipe"),
+    "完整模块手册": _row("完整模块手册", "Complete module guide", "完全モジュールガイド", "Guía completa de módulos", "Guida completa ai moduli", "Heildarhandbók eininga", "Manuale modulorum completum"),
+    "基础训练完成": _row("基础训练完成", "Basic training complete", "基本練習完了", "Entrenamiento básico completado", "Formazione base completata", "Grunnþjálfun lokið", "Exercitatio fundamentalis completa"),
 })
 
 def current_language() -> str:

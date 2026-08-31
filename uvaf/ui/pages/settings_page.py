@@ -400,6 +400,8 @@ class HotkeyRecorderDialog(QDialog):
 
 class SettingsPage(QWidget):
     settings_changed = Signal()
+    tutorial_requested = Signal()
+    tutorial_reference_requested = Signal()
 
     def __init__(
         self,
@@ -1037,6 +1039,57 @@ class SettingsPage(QWidget):
         )
 
         main.addWidget(data_card)
+
+        # --------------------------------------------------------------
+        # Tutorial
+        # --------------------------------------------------------------
+        tutorial_card = QFrame(objectName="card")
+        tutorial_card.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Minimum,
+        )
+        tutorial_layout = QVBoxLayout(tutorial_card)
+        tutorial_layout.setContentsMargins(18, 16, 18, 16)
+        tutorial_layout.setSpacing(10)
+
+        tutorial_layout.addWidget(
+            QLabel(
+                "教程",
+                objectName="sectionTitle",
+            )
+        )
+
+        tutorial_hint = QLabel(
+            "重新启动首次使用教程。教程会带你体验欢迎项目、清空示例并亲手制作一个简单的鼠标点击流程，最后可以打开完整模块手册。",
+            objectName="muted",
+        )
+        tutorial_hint.setWordWrap(True)
+        tutorial_layout.addWidget(tutorial_hint)
+
+        tutorial_buttons = QHBoxLayout()
+        tutorial_buttons.setSpacing(10)
+
+        self.restart_tutorial_button = QPushButton(
+            "再次开始教程",
+            objectName="secondaryButton",
+        )
+        self.restart_tutorial_button.clicked.connect(
+            self.tutorial_requested.emit
+        )
+        tutorial_buttons.addWidget(self.restart_tutorial_button)
+
+        self.open_tutorial_reference_button = QPushButton(
+            "打开完整模块手册",
+            objectName="secondaryButton",
+        )
+        self.open_tutorial_reference_button.clicked.connect(
+            self.tutorial_reference_requested.emit
+        )
+        tutorial_buttons.addWidget(self.open_tutorial_reference_button)
+        tutorial_buttons.addStretch()
+        tutorial_layout.addLayout(tutorial_buttons)
+
+        main.addWidget(tutorial_card)
         main.addStretch()
 
     def _update_fps_label(

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from pathlib import Path
+
+from PySide6.QtCore import QTimer, Qt
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -28,6 +31,7 @@ from ..core.i18n import (
     tr_text,
     translate_widget_tree,
 )
+from ..resources.tutorial.controller import TutorialController
 
 
 class MainWindow(QMainWindow):
@@ -67,7 +71,13 @@ class MainWindow(QMainWindow):
         self._connect_signals()
         self.apply_preferences()
 
+        self.tutorial_controller = TutorialController(self)
+
         self.switch_page("home")
+        QTimer.singleShot(
+            650,
+            self.tutorial_controller.maybe_start,
+        )
         self.logger.info(
             f"{tr_text('UVAF started')} v{__version__}.",
             source="app",
@@ -118,8 +128,30 @@ class MainWindow(QMainWindow):
         brand_row = QHBoxLayout()
         brand_row.setSpacing(10)
 
-        mark = QLabel("UV", objectName="brandMark")
+        mark = QLabel(objectName="brandMark")
         mark.setAlignment(Qt.AlignCenter)
+        mark.setText("")
+        icon_path = (
+            Path(__file__).resolve().parents[1]
+            / "resources"
+            / "icons"
+            / "uvaf.png"
+        )
+        if icon_path.exists():
+            pixmap = QPixmap(str(icon_path))
+            if not pixmap.isNull():
+                mark.setPixmap(
+                    pixmap.scaled(
+                        28,
+                        28,
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation,
+                    )
+                )
+            else:
+                mark.setText("UV")
+        else:
+            mark.setText("UV")
 
         brand_text = QVBoxLayout()
         brand_text.setSpacing(0)
@@ -185,6 +217,22 @@ class MainWindow(QMainWindow):
         self.settings_page.settings_changed.connect(
             self.apply_preferences
         )
+        self.settings_page.tutorial_requested.connect(
+            self.start_tutorial
+        )
+        self.settings_page.tutorial_reference_requested.connect(
+            self.open_tutorial_reference
+        )
+
+    def start_tutorial(self) -> None:
+        if not hasattr(self, "tutorial_controller"):
+            self.tutorial_controller = TutorialController(self)
+        self.tutorial_controller.start(force=True)
+
+    def open_tutorial_reference(self) -> None:
+        if not hasattr(self, "tutorial_controller"):
+            self.tutorial_controller = TutorialController(self)
+        self.tutorial_controller.open_reference()
 
     def apply_preferences(self) -> None:
         app = QApplication.instance()

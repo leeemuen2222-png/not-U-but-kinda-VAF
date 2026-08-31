@@ -36,6 +36,10 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "runtime": {
         "debug_logging": False,
     },
+    "tutorial": {
+        "completed": False,
+        "skipped": False,
+    },
 }
 
 
